@@ -24,21 +24,34 @@ void setup() {
 
 //mess rn
 double val;
+double startTime;
+double prechargeTime;
+bool timerStarted=false;
+
 //TODO create a potentiometer class that can be used for breaks, accel etc. Optionally an analog input class but that prob not needed
 //upper bound of potentiometer
 int upperBound = 940;
 int lowerBound = 0;
 int range = upperBound-lowerBound;
+//outgoing signal table true means it should be High false means it should be low
+bool ECUOk;
+bool PRECHARGE_FINISHED;
+bool READY_TO_GO;
 void loop() {
+  prechargeTime=2000;
   //this is just for debugging 
   currentState=currentState;
   //inside loop determine which function to jump into and if it returns false step to the next state for states that step to another one 
   switch(currentState){
     case INIT:
-      carInit();
+      if(carInit()){
+        currentState=RESET;
+        }
       break;
     case RESET:
-      carReset();
+      if(carReset()){
+        currentState=HV_READY_WAIT;
+        }
       break;    
     
     case RESET_CONFIRM:
@@ -65,12 +78,19 @@ void loop() {
       readyToGoWait();
       break;
   }
+  //Output signals based on current signal table states
+  //
 }
-void carInit(){
-  return false;
+bool carInit(){
+  ECUOk=false;
+  PRECHARGE_FINISHED=true;
+  return true;
   }
 bool carReset(){
-  return false;
+  ECUOk=false;
+  PRECHARGE_FINISHED=true;
+  //todo reset memory when memory is implemented
+  return true;
   }
 bool resetConfirm(){
   return false;
@@ -82,19 +102,30 @@ bool routineCheck(){
   return false;
   }
 bool preHVCheck(){
-  return false;
   }
 bool HVReadyWait(){
   return false;
   }
 bool prechargeWait(){
-  return false;
+  //Timer for precharge time needed
+  if(!timerStarted){
+    startTime=millis();}
+  else if(timerStarted&&millis()-startTime<=prechargeTime){
+    PRECHARGE_FINISHED=true;
+    return false;
+    }
+  else{
+    timerStarted=false;
+    PRECHARGE_FINISHED=false;
+    return true;
+    }
   }
   
 bool readyToGoWait(){
     // put your main code here, to run repeatedly:
   val = analogRead(17);
   val = val-lowerBound;
+  return false;
   val = val/range;
   val = val*100;
    Serial.println("AccelPedal1 Percentage"+(String)val);
