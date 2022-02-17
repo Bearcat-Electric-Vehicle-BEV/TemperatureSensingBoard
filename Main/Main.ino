@@ -59,6 +59,12 @@ void setup() {
   
   // TODO: Marshal (2/14/22) Implement watchdog 
   // TODO: Marshal (2/14/22) Implement interrupt table 
+
+  pinMode(17, OUTPUT);
+  pinMode(16, OUTPUT);
+  Wire1.begin(0x20);
+  
+  
 }
 
 // TODO: Marshal (2/14/22)
@@ -66,52 +72,57 @@ void setup() {
  * Optionally an analog input class but that prob not needed
  */
 
-
 void loop() {
   
   //inside loop determine which function to jump into and if it returns false step to the next state for states that step to another one 
 
+  
+
+  digitalWrite(17, HIGH);
+  digitalWrite(16, HIGH);
+  
+
   // https://xiahualiu.github.io/posts/bev-tasks/ 
-  switch(currentState){
-    case INIT:
-      if(carInit())
-        currentState=RESET;
-      break;
-
-    case RESET:
-      if(carReset())
-        currentState=HV_READY_WAIT;
-      
-      break;    
-    
-    case RESET_CONFIRM:
-      resetConfirm();
-      break;
-
-    case ERROR_STATE:
-      error();
-      break;
-
-    case ROUTINE_CHECK:
-      routineCheck();
-      break;
-
-    case PRE_HV_CHECK:
-      preHVCheck();
-      break;
-
-    case HV_READY_WAIT:
-      HVReadyWait();
-      break;
-      
-    case PRECHARGE_WAIT:
-      prechargeWait();
-      break;
-      
-    case READY_TO_GO_WAIT:
-      readyToGoWait();
-      break;
-  }
+//  switch(currentState){
+//    case INIT:
+//      if(carInit())
+//        currentState=RESET;
+//      break;
+//
+//    case RESET:
+//      if(carReset())
+//        currentState=HV_READY_WAIT;
+//      
+//      break;    
+//    
+//    case RESET_CONFIRM:
+//      resetConfirm();
+//      break;
+//
+//    case ERROR_STATE:
+//      error();
+//      break;
+//
+//    case ROUTINE_CHECK:
+//      routineCheck();
+//      break;
+//
+//    case PRE_HV_CHECK:
+//      preHVCheck();
+//      break;
+//
+//    case HV_READY_WAIT:
+//      HVReadyWait();
+//      break;
+//      
+//    case PRECHARGE_WAIT:
+//      prechargeWait();
+//      break;
+//      
+//    case READY_TO_GO_WAIT:
+//      readyToGoWait();
+//      break;
+//  }
 }
 
 bool carInit(){

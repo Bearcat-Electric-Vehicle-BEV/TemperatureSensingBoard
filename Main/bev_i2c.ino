@@ -12,32 +12,11 @@
  * returns value signifying status
  */
 int write_channel_int(uint chan, int val){
-	// Check a valid channel
+    if (chan < MIN_I2C_ADDR || chan > MAX_I2C_ADDR)
+        return -1;
 
 	Wire.beginTransmission(chan);
 	Wire.write(val);
-	Wire.endTransmission();
-
-	delay(500);
-
-	return 0;
-}
-
-/*
- * write_channel_pint
- *
- * Takes in a channel and value and writes over I2C bus as master
- * returns value signifying status
- */
-int write_channel_int_array(uint chan, int *val, size_t size){
-	// Check a valid channel
-
-	Wire.beginTransmission(chan);
-	for (uint i=0; i<size; i++){
-		Wire.write(val[i]);
-
-	}
-
 	Wire.endTransmission();
 
 	delay(500);
@@ -52,7 +31,13 @@ int write_channel_int_array(uint chan, int *val, size_t size){
  * returns value signifying status
  */
 int write_channel_char_array(uint chan, char *val, size_t size){
-	// Check a valid channel
+
+    if (chan < MIN_I2C_ADDR || chan > MAX_I2C_ADDR)
+        return -1;
+    else if (val == nullptr)
+        return -1;
+    else if (size <= 0)
+        return -1;
 
 	Wire.beginTransmission(chan);
 	Wire.write(val);
@@ -63,6 +48,18 @@ int write_channel_char_array(uint chan, char *val, size_t size){
 	return 0;
 }
 
+void requestEvent()
+{
+  Serial.println("writing hello to i2c bus");
+  Wire1.write("hello ");     // respond with message of 6 bytes
+}
+
+void slave_sender(){
+  Wire1.begin(8);        // join i2c bus with address #8
+  Wire1.onRequest(requestEvent); // register event
+}
+
+
 /*
  * find_address
  * finds address of devices on I2C bus and prints to Serial
@@ -72,7 +69,7 @@ void find_address(){
     Serial.println("Searching for slave devices...");
 
     uint8_t num_found = 0;
-    for (uint8_t address = 1; address < 127; address++) {
+    for (uint8_t address = MIN_I2C_ADDR; address < MAX_I2C_ADDR; address++) {
 		// Serial.println("Checking address ");
 		// Serial.println(address, HEX);
         Wire.beginTransmission(address);
