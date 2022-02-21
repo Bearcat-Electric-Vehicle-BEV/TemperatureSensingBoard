@@ -1,64 +1,34 @@
-//#include <Ardiuno.h>
 #include <i2c_device.h>
 
 #include "include/bev_i2c.h"
 #include <i2c_driver.h>
 #include <i2c_driver_wire.h>
 
-/*
- * write_channel_int
- *
- * Takes in a channel and value and writes over I2C bus as master
- * returns value signifying status
- */
-int write_channel_int(uint chan, int val){
-    if (chan < MIN_I2C_ADDR || chan > MAX_I2C_ADDR)
-        return -1;
-
-	Wire.beginTransmission(chan);
-	Wire.write(val);
-	Wire.endTransmission();
-
-	delay(500);
-
-	return 0;
-}
-
-/*
- * write_channel_pchar
- *
- * Takes in a channel and value and writes over I2C bus as master
- * returns value signifying status
- */
-int write_channel_char_array(uint chan, char *val, size_t size){
-
-    if (chan < MIN_I2C_ADDR || chan > MAX_I2C_ADDR)
-        return -1;
-    else if (val == nullptr)
-        return -1;
-    else if (size <= 0)
-        return -1;
-
-	Wire.beginTransmission(chan);
-	Wire.write(val);
-	Wire.endTransmission();
-
-	delay(500);
-
-	return 0;
-}
-
-void requestEvent()
+// Teensy Write, Display Read
+void displayRequestEvent()
 {
-  Serial.println("writing hello to i2c bus");
-  Wire1.write("hello ");     // respond with message of 6 bytes
+    Serial.println("Writing Hello");
+
+    Wire.write(25);  //speed (in kph)
+    Wire.write(50);  //battery temp (in degree C)
+    Wire.write(10);  //range left in distance (in km)
+    Wire.write(45);  //range left in terms of time (mins)
+    Wire.write(99);  //battery life (percentage)
+
+
 }
 
-void slave_sender(){
-  Wire1.begin(8);        // join i2c bus with address #8
-  Wire1.onRequest(requestEvent); // register event
+// Teensy Read, Display Write
+void displayReceiveEvent()
+{
+    while(Wire.available() > 1) {
+        char c = Wire.read();
+        Serial.print(c);
+    }
+    Serial.println();
+    int x = Wire.read();
+    Serial.println(x);
 }
-
 
 /*
  * find_address
