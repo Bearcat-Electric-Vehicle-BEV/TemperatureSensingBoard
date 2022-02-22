@@ -4,22 +4,24 @@
 #include <i2c_driver.h>
 #include <i2c_driver_wire.h>
 
+int count = 0;
+
 // Teensy Write, Display Read
 void displayRequestEvent()
 {
-    Serial.println("Writing Hello");
-
-    Wire.write(25);  //speed (in kph)
-    Wire.write(50);  //battery temp (in degree C)
-    Wire.write(10);  //range left in distance (in km)
-    Wire.write(45);  //range left in terms of time (mins)
-    Wire.write(99);  //battery life (percentage)
+    Serial.println(count);
+    count += 1;
+    Wire.write(25 + int(random(0, 10)));  //speed (in kph)
+    Wire.write(30  + int(random(0, 5)));  //battery temp (in degree C)
+    Wire.write(10  + int(random(0, 5)));  //range left in distance (in km)
+    Wire.write(45  + int(random(0, 5)));  //range left in terms of time (mins)
+    Wire.write(99  - int(random(0, 5)));  //battery life (percentage)
 
 
 }
 
 // Teensy Read, Display Write
-void displayReceiveEvent()
+void displayReceiveEvent(int howMany)
 {
     while(Wire.available() > 1) {
         char c = Wire.read();

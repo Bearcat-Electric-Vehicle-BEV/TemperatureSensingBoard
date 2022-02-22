@@ -99,7 +99,7 @@ void setup() {
   pinMode(PIN_SCL, OUTPUT);
   Wire.begin(0x40);
   Wire.onRequest(displayRequestEvent);
-//  Wire.onReceive(displayReceiveEvent);
+  Wire.onReceive(displayReceiveEvent);
 //  digitalWrite(PIN_SDA, HIGH);
 
 }
