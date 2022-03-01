@@ -4,9 +4,73 @@
 #include <i2c_driver.h>
 #include <i2c_driver_wire.h>
 
-int count = 0;
+I2CMaster& master = master;
+I2CDevice sensor = I2CDevice(master, DISPLAY_I2C_ADDR, _BIG_ENDIAN);
 
-// Teensy Write, Display Read
+/*
+ * displayUpdateParam
+ * uint16_t param_macro - macro defining which display parameter to write to
+ * uint16_t param_val   - value to be written to display parameter
+ * 
+ * Sends two I2C bytes, one for defining which parameter is to be written to,
+ * the other for the value of that parameter. The goal of this is to not update 
+ * all the parameters of the display constantly, but in unique intervals. For example 
+ * the driver should have the speed updated very often, but not necessarily the battery
+ * percentage since it changes less frequently. This could be implemented on the teensy side
+ * via timers or hysterisis.
+ */
+bool displayUpdateParam(uint16_t param_macro, uint16_t param_val){
+
+  if (param_macro <= DISPLAY_PARAM_MIN || param_macro >= DISPLAY_PARAM_MAX)
+  {
+    Serial.printf("Unknown display parameter %d\n", param_macro);
+    return false;
+  }
+
+  if (!sensor.write(DISPLAY_I2C_ADDR, param_macro, false)) {
+    Serial.printf("ERROR: Failed to write display parameter %d to display\n", param_macro);
+    return false;
+  }
+  
+  Serial.printf("Wrote parameter %d to display\n", val);
+      
+  if (!sensor.write(DISPLAY_I2C_ADDR, param_val, true)) {
+    Serial.printf("ERROR: Failed to write %d to display\n", param_val);
+    return false;
+  }
+
+  Serial.printf("Wrote val %d to display\n", val);
+
+  return true;
+    
+}
+
+// Teensy Master Write, Display Read
+void displayWrite(uint16_t val){
+
+    if (!sensor.write(DISPLAY_I2C_ADDR, val, true)) {
+      Serial.println("ERROR: Failed to write to display");
+      return;
+    } else {
+      Serial.printf("Wrote %d to display\n", val);     
+    }
+    
+}
+
+// Teensy Master Read, Display Write
+void displayRead(){
+
+    uint16_t val = 0;
+    if (!sensor.read(DISPLAY_I2C_ADDR, &val, true)) {
+        Serial.println("ERROR: Failed to read from display");
+    }
+    Serial.printf("Read from display: %d\n", val);
+  
+}
+
+
+// Teensy Slave Write, Display Read
+int count = 0;
 void displayRequestEvent()
 {
     Serial.println(count);
@@ -20,7 +84,7 @@ void displayRequestEvent()
 
 }
 
-// Teensy Read, Display Write
+// Teensy Slave Read, Display Write
 void displayReceiveEvent(int howMany)
 {
     while(Wire.available() > 1) {

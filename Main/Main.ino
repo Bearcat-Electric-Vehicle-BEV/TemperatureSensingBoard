@@ -97,9 +97,10 @@ void setup() {
   // Initialize I2C Bus 
   pinMode(PIN_SDA, OUTPUT);
   pinMode(PIN_SCL, OUTPUT);
-  Wire.begin(0x40);
-  Wire.onRequest(displayRequestEvent);
-  Wire.onReceive(displayReceiveEvent);
+  // Code for teensy to act as slave
+//  Wire.begin(0x40);
+//  Wire.onRequest(displayRequestEvent);
+//  Wire.onReceive(displayReceiveEvent);
 //  digitalWrite(PIN_SDA, HIGH);
 
 }
@@ -112,12 +113,13 @@ void loop() {
    */
 
   // DEBUG LOOP
-//  if (debug){
-//
-//    
-//
-//    return;
-//  }
+  if (debug){
+
+    displayWrite(5);
+    delay(1000);
+
+    return;
+  }
 
 
   switch(currentState){
