@@ -3,7 +3,7 @@ Repository for Teensy 4.1 ECU development.
 
 ## Library Dependencies
 All library dependencies can be found in the libs directory. These libraries must be installed into the Ardiuno IDE, to do so follow the following 
-<a ref="https://docs.arduino.cc/software/ide-v1/tutorials/installing-libraries">instructions</a>
+[instructions](https://docs.arduino.cc/software/ide-v1/tutorials/installing-libraries)
 
 #### Library Github Links
  - [Teensy4 I2C Library](https://github.com/Richard-Gemmell/teensy4_i2c)
