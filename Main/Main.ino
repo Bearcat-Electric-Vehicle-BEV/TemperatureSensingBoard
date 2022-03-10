@@ -25,6 +25,7 @@
 #include <i2c_driver.h>
 #include <i2c_driver_wire.h>
 #include "include/bev_i2c.h"
+#include "include/bev_can.h"
 
 // TODO: make them all caps or not
 #define PIN_VEHICLE_PWR 2
@@ -36,8 +37,8 @@
 #define PIN_SHUTDOWN_TTL_OK 12
 #define PIN_WHEEL2_SENSE 24
 #define PIN_WHEEL3_SENSE 25
-#define PIN_CAN_RX 23
-#define PIN_CAN_TX 22
+#define PIN_CAN1_RX 23
+#define PIN_CAN1_TX 22
 #define PIN_WHEEL0_SENSE 21
 #define PIN_WHEEL1_SENSE 20
 #define PIN_SDA 19
@@ -63,10 +64,11 @@ enum ECUState {
 
 ECUState currentState;
 
+IntervalTimer HeartBeat;
+IntervalTimer CAN_RX_Timer;
+
 // TODO: Marshal (2/14/22) Implement watchdog 
 // TODO: Marshal (2/14/22) Need to have a logging and error handling system, example (status/return codes)
-// TODO: Marshal (2/14/22): Lots of globals that are undocumented
-// TODO: Marshal (2/14/22) need to be strict on typing to save memory and speed
 double val;
 double startTime;
 double prechargeTime;
@@ -94,14 +96,47 @@ void setup() {
   currentState = INIT;
   prechargeTime = 2000; // TODO: MAGIC NUMBER
 
-  // Initialize I2C Bus 
+  // Teensy I2C Master 
   pinMode(PIN_SDA, OUTPUT);
   pinMode(PIN_SCL, OUTPUT);
-  // Code for teensy to act as slave
-//  Wire.begin(0x40);
-//  Wire.onRequest(displayRequestEvent);
-//  Wire.onReceive(displayReceiveEvent);
-//  digitalWrite(PIN_SDA, HIGH);
+  
+  // Teensy I2C Slave Code
+  //  Wire.begin(0x40);
+  //  Wire.onRequest(displayRequestEvent);
+  //  Wire.onReceive(displayReceiveEvent);
+
+  // CAN RX/TX
+  pinMode(PIN_CAN1_RX, INPUT);
+  pinMode(PIN_CAN1_TX, OUTPUT); 
+
+  // Enable CAN
+  Can0.begin();
+  Can0.setBaudRate(BAUD_RATE);
+  Can0.setMaxMB(16);
+  Can0.enableFIFO();
+  Can0.enableFIFOInterrupt();
+  Can0.onReceive(canSniff);
+  Can0.mailboxStatus();
+
+  // Setup Motor Controller CAN RX Mailbox
+  Can0.setMBFilter(MB6, 0x123);
+  Can0.setMB(MB6,RX,STD); // Set mailbox as receiving standard frames.
+
+  // Setup Motor Controller CAN TX Mailbox
+  Can0.setMBFilter(MB9, 0x0C0);
+  Can0.setMB(MB9,TX); // Set mailbox as transmit
+
+  // We have 4 teensy timers
+  // TODO: dangerous if we take out of execution of more important tasks
+  // Setup IntervalTimer to send HeartBeat CAN msg
+  HeartBeat.priority(128); // TODO: very crucial
+  HeartBeat.begin(sendRinehartHeartBeat, HEART_BEAT); // send message at least every half second
+
+  // TODO: need to configure message recieving correctly
+  // Setup CAN RX Timer
+  /* For the callback system to push received interrupt frames from the queue to the callback. Sequential frames are pushed out
+  from there as well
+  */
 
 }
 
@@ -112,14 +147,18 @@ void loop() {
    * value determines if machine needs to switch states.
    */
 
-  // DEBUG LOOP
-  if (debug){
+  /* DEBUG LOOP */
 
-    displayWrite(5);
-    delay(1000);
+  // displayUpdateParam(DISPLAY_BATTERY_LIFE, 50);
 
-    return;
-  }
+  // TODO: These timers and other things shouldn't be enabled if we are in a bad state
+
+  // Can0.events(); // todo: supposed to be in a timer or loop
+
+
+  delay(1000);
+
+  return;
 
 
   switch(currentState){
