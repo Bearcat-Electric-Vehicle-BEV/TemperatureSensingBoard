@@ -27,7 +27,6 @@
 #include "include/bev_i2c.h"
 #include "include/bev_can.h"
 
-// TODO: make them all caps or not
 #define PIN_VEHICLE_PWR 2
 #define PIN_CURRENT_OUT 3
 #define PIN_WHEEL_MOVE_OUT 4
@@ -64,8 +63,8 @@ enum ECUState {
 
 ECUState currentState;
 
-IntervalTimer HeartBeat;
-IntervalTimer CAN_RX_Timer;
+IntervalTimer Heartbeat;
+IntervalTimer CAN_EVENTS_Timer;
 
 // TODO: Marshal (2/14/22) Implement watchdog 
 // TODO: Marshal (2/14/22) Need to have a logging and error handling system, example (status/return codes)
@@ -86,11 +85,16 @@ bool PRECHARGE_FINISHED;
 bool READY_TO_GO;
 bool HV_READY;
 
-// DEBUG FLAG
-bool debug = true;
+// adslk;fjsal;kfj
+int TorqueCommand = 0;
+int SpeedCommand = 0;
+int Direction = 0;
+int InverterEnabled = 0;
+int Duration = 0;
+
 
 void setup() {
-  
+ 
   Serial.begin(38400);
 
   currentState = INIT;
@@ -109,34 +113,30 @@ void setup() {
   pinMode(PIN_CAN1_RX, INPUT);
   pinMode(PIN_CAN1_TX, OUTPUT); 
 
-  // Enable CAN
+  // Configure CAN BUS 0 
   Can0.begin();
   Can0.setBaudRate(BAUD_RATE);
-  Can0.setMaxMB(16);
+  Can0.setMaxMB(NUM_RX_MAILBOXES);
   Can0.enableFIFO();
   Can0.enableFIFOInterrupt();
   Can0.onReceive(canSniff);
   Can0.mailboxStatus();
 
-  // Setup Motor Controller CAN RX Mailbox
-  Can0.setMBFilter(MB6, 0x123);
-  Can0.setMB(MB6,RX,STD); // Set mailbox as receiving standard frames.
+  // RMS CAN RX Mailbox
+  // Can0.setMBFilter(MB6, 0x123);
+  // Can0.setMB(MB6,RX,STD); // Set mailbox as receiving standard frames.
 
-  // Setup Motor Controller CAN TX Mailbox
+  // RMS CAN TX Mailbox
   Can0.setMBFilter(MB9, 0x0C0);
   Can0.setMB(MB9,TX); // Set mailbox as transmit
 
-  // We have 4 teensy timers
-  // TODO: dangerous if we take out of execution of more important tasks
-  // Setup IntervalTimer to send HeartBeat CAN msg
-  HeartBeat.priority(128); // TODO: very crucial
-  HeartBeat.begin(sendRinehartHeartBeat, HEART_BEAT); // send message at least every half second
+  // RMS Command Message Heartbeat
+  Heartbeat.priority(128);
+  Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
 
-  // TODO: need to configure message recieving correctly
-  // Setup CAN RX Timer
-  /* For the callback system to push received interrupt frames from the queue to the callback. Sequential frames are pushed out
-  from there as well
-  */
+  // RMS trigger events periodically
+  // CAN_EVENTS_Timer.priority(129);
+  // CAN_EVENTS_Timer.begin(Can0.events, (HEARTBEAT / 2));
 
 }
 
@@ -147,13 +147,7 @@ void loop() {
    * value determines if machine needs to switch states.
    */
 
-  /* DEBUG LOOP */
-
-  // displayUpdateParam(DISPLAY_BATTERY_LIFE, 50);
-
-  // TODO: These timers and other things shouldn't be enabled if we are in a bad state
-
-  // Can0.events(); // todo: supposed to be in a timer or loop
+  Can0.events();
 
 
   delay(1000);
@@ -228,6 +222,7 @@ bool resetConfirm(){
 }
   
 bool error(){
+  // TODO: Should turn off Heartbeat and events timers when we are in a fault state
   return false;
 }
 
