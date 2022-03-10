@@ -25,8 +25,8 @@
 #include <i2c_driver.h>
 #include <i2c_driver_wire.h>
 #include "include/bev_i2c.h"
+#include "include/bev_can.h"
 
-// TODO: make them all caps or not
 #define PIN_VEHICLE_PWR 2
 #define PIN_CURRENT_OUT 3
 #define PIN_WHEEL_MOVE_OUT 4
@@ -36,8 +36,8 @@
 #define PIN_SHUTDOWN_TTL_OK 12
 #define PIN_WHEEL2_SENSE 24
 #define PIN_WHEEL3_SENSE 25
-#define PIN_CAN_RX 23
-#define PIN_CAN_TX 22
+#define PIN_CAN1_RX 23
+#define PIN_CAN1_TX 22
 #define PIN_WHEEL0_SENSE 21
 #define PIN_WHEEL1_SENSE 20
 #define PIN_SDA 19
@@ -63,10 +63,11 @@ enum ECUState {
 
 ECUState currentState;
 
+IntervalTimer Heartbeat;
+IntervalTimer CAN_EVENTS_Timer;
+
 // TODO: Marshal (2/14/22) Implement watchdog 
 // TODO: Marshal (2/14/22) Need to have a logging and error handling system, example (status/return codes)
-// TODO: Marshal (2/14/22): Lots of globals that are undocumented
-// TODO: Marshal (2/14/22) need to be strict on typing to save memory and speed
 double val;
 double startTime;
 double prechargeTime;
@@ -84,24 +85,58 @@ bool PRECHARGE_FINISHED;
 bool READY_TO_GO;
 bool HV_READY;
 
-// DEBUG FLAG
-bool debug = true;
+// adslk;fjsal;kfj
+int TorqueCommand = 0;
+int SpeedCommand = 0;
+int Direction = 0;
+int InverterEnabled = 0;
+int Duration = 0;
+
 
 void setup() {
-  
+ 
   Serial.begin(38400);
 
   currentState = INIT;
   prechargeTime = 2000; // TODO: MAGIC NUMBER
 
-  // Initialize I2C Bus 
+  // Teensy I2C Master 
   pinMode(PIN_SDA, OUTPUT);
   pinMode(PIN_SCL, OUTPUT);
-  // Code for teensy to act as slave
-//  Wire.begin(0x40);
-//  Wire.onRequest(displayRequestEvent);
-//  Wire.onReceive(displayReceiveEvent);
-//  digitalWrite(PIN_SDA, HIGH);
+  
+  // Teensy I2C Slave Code
+  //  Wire.begin(0x40);
+  //  Wire.onRequest(displayRequestEvent);
+  //  Wire.onReceive(displayReceiveEvent);
+
+  // CAN RX/TX
+  pinMode(PIN_CAN1_RX, INPUT);
+  pinMode(PIN_CAN1_TX, OUTPUT); 
+
+  // Configure CAN BUS 0 
+  Can0.begin();
+  Can0.setBaudRate(BAUD_RATE);
+  Can0.setMaxMB(NUM_RX_MAILBOXES);
+  Can0.enableFIFO();
+  Can0.enableFIFOInterrupt();
+  Can0.onReceive(canSniff);
+  Can0.mailboxStatus();
+
+  // RMS CAN RX Mailbox
+  // Can0.setMBFilter(MB6, 0x123);
+  // Can0.setMB(MB6,RX,STD); // Set mailbox as receiving standard frames.
+
+  // RMS CAN TX Mailbox
+  Can0.setMBFilter(MB9, 0x0C0);
+  Can0.setMB(MB9,TX); // Set mailbox as transmit
+
+  // RMS Command Message Heartbeat
+  Heartbeat.priority(128);
+  Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
+
+  // RMS trigger events periodically
+  // CAN_EVENTS_Timer.priority(129);
+  // CAN_EVENTS_Timer.begin(Can0.events, (HEARTBEAT / 2));
 
 }
 
@@ -112,14 +147,12 @@ void loop() {
    * value determines if machine needs to switch states.
    */
 
-  // DEBUG LOOP
-  if (debug){
+  Can0.events();
 
-    displayWrite(5);
-    delay(1000);
 
-    return;
-  }
+  delay(1000);
+
+  return;
 
 
   switch(currentState){
@@ -189,6 +222,7 @@ bool resetConfirm(){
 }
   
 bool error(){
+  // TODO: Should turn off Heartbeat and events timers when we are in a fault state
   return false;
 }
 
