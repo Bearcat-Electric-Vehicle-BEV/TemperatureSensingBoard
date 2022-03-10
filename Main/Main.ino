@@ -28,31 +28,21 @@
 #include "include/bev_can.h"
 
 #define PIN_VEHICLE_PWR 2
-#define PIN_CURRENT_OUT 3
-#define PIN_WHEEL_MOVE_OUT 4
+#define PIN_Brake_Light 5
 #define PIN_ECU_OK 9
 #define PIN_PRECHARGE_FINISHED 10
 #define PIN_READY_TO_GO 11
 #define PIN_SHUTDOWN_TTL_OK 12
-#define PIN_WHEEL2_SENSE 24
-#define PIN_WHEEL3_SENSE 25
 #define PIN_CAN1_RX 23
 #define PIN_CAN1_TX 22
-#define PIN_WHEEL0_SENSE 21
-#define PIN_WHEEL1_SENSE 20
 #define PIN_SDA 19
 #define PIN_SCL 18
-// #define PIN_SDA1 17
-// #define PIN_SCL1 16
 #define PIN_ACCEL_0 17
 #define PIN_ACCEL_1 16
-#define PIN_CURRENT_IN 41
 #define PIN_BRAKE_POS 40
+#define PIN_SOC 39
 #define PIN_SPEAKER 37
 #define PIN_RESET 36
-#define PIN_ECU_FAULT 0
-#define PIN_ECU_CHARGER_FAULT 0
-#define PIN_PRECHARGE_NOT_FINISHED 0
 
 /* State Machine Diagram https://drive.google.com/file/d/1_kZ9mo7b1bYq2sO-uvetE1C0Gtml-KTl/view?usp=sharing
  * Original documentation on the states can be found at https://xiahualiu.github.io/posts/bev-tasks/
