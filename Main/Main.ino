@@ -72,6 +72,9 @@ double startTime;
 double prechargeTime;
 bool timerStarted=false;
 
+// Curve that maps accelerator pedal position to torque
+String pedalInputCurve = "120X";
+
 //upper bound of potentiometer
 int upperBound = 940;
 int lowerBound = 0;
@@ -115,7 +118,7 @@ void loop() {
   // DEBUG LOOP
   if (debug){
 
-    displayWrite(5);
+    displayRequestEvent();
     delay(1000);
 
     return;
@@ -225,9 +228,47 @@ bool prechargeWait(){
   }
   return false;
 }
+
+bool ETC() {
+  
+  // TODO: Initialise these variables outside function
+  double accel_val1 = analogRead(PIN_ACCEL_0);
+  double accel_val2 = analogRead(PIN_ACCEL_1);
+  double accel_val;
+  double brake_val = analogRead(PIN_BRAKE_POS);
+  
+  // Might want to change this since they would be under different voltages
+  if (accel_val1 != accel_val2) {
+    // Call error function
+    return false;
+  }
+
+  accel_val = (accel_val1 + accel_val2) / 2.0;
+  
+  // TODO: Call CAN function to read current Torque value from motor controller  
+  double currentTorque = 0;
+  
+  double targetTorqueValue = getTorqueValueFromCurve(pedalInputCurve, accel_val, currentTorque);
+
+  //Call CAN function to send target Torque value to motor controller
+
+  return true;
+  
+}
+
+double getTorqueValueFromCurve(String curve, double currentAccelPos, double currentTorque) {
+  
+  // TODO: Figure out what sort of throttle response do we need, and modelling it with a polynormal curve
+  return 120;
+  
+}
   
 bool readyToGoWait(){
   /* Main Loop Code Here */
+
+  if(!ETC()) {
+    // Something went wrong, call error function
+  }
 
   val = analogRead(17); // TODO: magic number
   val = val-lowerBound;
