@@ -26,6 +26,7 @@
 #include <i2c_driver_wire.h>
 #include "include/bev_i2c.h"
 #include "include/bev_can.h"
+#include "include/bev_sd.h"
 
 #define PIN_VEHICLE_PWR 2
 #define PIN_Brake_Light 5
@@ -138,6 +139,8 @@ void loop() {
    */
 
   Can0.events();
+
+  log_2_sd("test"); 
 
 
   delay(1000);
