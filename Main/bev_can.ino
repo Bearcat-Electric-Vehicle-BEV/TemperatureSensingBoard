@@ -75,24 +75,42 @@ void canSniff(const CAN_message_t &msg){
             the values should be discarded.
          */
 
-        int sum = msg.id + 8;
-        for (int i=0; i<7; i++){
-          sum += msg.buf[i];
+        // Fault codes don't have checksums 
+        if (msg.id == BMS_FAULTS1) {
+            for (int i=0; i<8; i++){
+                *BmsFaults1[i] = (msg.buf[0] & (2 << i)) >> i;
+            }
+
+        } else if (msg.id == BMS_FAULTS2) {
+            for (int j=0; j<2; j++){
+              for (int i=0; i<16; i++){
+                  *BmsFaults2[i] = (msg.buf[j] & (2 << i)) >> i;
+              }
+            }
+        } else {
+            // Expect all message to be 8 bytes in len
+
+            int sum = msg.id + 8;
+            for (int i=0; i<7; i++){
+              sum += msg.buf[i];
+            }
+
+            sum &= ~8;
+
+            if (sum != msg.buf[7]){
+              return; // Failed checksum
+            }
+
+            // Assign signal value to global variables in bev_can.h
+            int index = msg.id - BMS_ADDR_LOW;
+            unsigned** stash = BmsMsgs[index];
+
+            for (int i=0; i<msg.len; i++){
+                *stash[i] = msg.buf[i];
+            }
+
         }
 
-        sum &= ~8;
-
-        if (sum != msg.buf[7]){
-          return; // Failed checksum
-        }
-
-        // Assign signal value to global variables in bev_can.h
-        int index = msg.id - BMS_ADDR_LOW;
-        int** stash = BmsMsgs[index];
-
-        for (int i=0; i<8; i++){
-            *stash[i] = msg.buf[i];
-        }
 
     }
     else {} // unknown msg

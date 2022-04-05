@@ -53,25 +53,82 @@
  */
 
 #define BMS_ADDR_LOW 0x6B1
-#define BMS_ADDR_HIGH 0x6B1
+#define BMS_MSG1 0x6B1
+#define BMS_FAULTS1 0x6B2
+#define BMS_FAULTS2 0x6B3
+#define BMS_ADDR_HIGH 0x6B3
 
-// BMS Signals 
-int SOC;
-int DCL;
-int CCL; 
-int InternalTemperature;
-int HighestCellVoltage;
-int PackCurrent;
-int AverageTemperature;
-int CheckSum;
+// BMS Parameter Signals 
+unsigned SOC;
+unsigned DCL; 
+unsigned CCL; 
+unsigned InternalTemperature;
+unsigned HighestCellVoltage;
+unsigned PackCurrent;
+unsigned AverageTemperature;
+unsigned CheckSum;
 
-int* BmsMsg1[8] {
+// BMS Fault Signals
+unsigned DischargeLimitEnforcementFault;
+unsigned ChargerSafteyRelayFault;
+unsigned InternalHardwareFault;
+unsigned InternalHeatsinkThermistorFault;
+unsigned InternalSoftwareFault;
+unsigned HighestCellVoltageTooHighFault;
+unsigned LowestCellVoltageTooLowFault;
+unsigned PackTooHotFault;
+unsigned DTCSTATUS_RESERVED; 
+
+unsigned InternalCommunicationFault;
+unsigned CellBalancingStuckOffFault;
+unsigned WeakCellFault;
+unsigned LowCellVoltageFault;
+unsigned OpenWiringFault;
+unsigned CurrentSensorFault;
+unsigned HighestCellVoltageOver5VFault;
+unsigned CellASICFault;
+unsigned WeakPackFault;
+unsigned FanMonitorFault;
+unsigned ThermistorFault;
+unsigned ExternalCommunicationFault;
+unsigned RedundantPowerSupplyFault;
+unsigned HighVoltageIsolationFault;
+unsigned InputPowerSupplyFault;
+unsigned ChargeLimitEnforcementFault;
+
+unsigned * BmsFaults1[8] = {
+	&DischargeLimitEnforcementFault, &ChargerSafteyRelayFault,
+	&InternalHardwareFault, &InternalHeatsinkThermistorFault,
+	&InternalSoftwareFault, &HighestCellVoltageTooHighFault,
+	&LowestCellVoltageTooLowFault, &PackTooHotFault
+};
+
+unsigned * BmsFaults2[16] = {
+	&InternalCommunicationFault,
+	&CellBalancingStuckOffFault,
+	&WeakCellFault,
+	&LowCellVoltageFault,
+	&OpenWiringFault,
+	&CurrentSensorFault,
+	&HighestCellVoltageOver5VFault,
+	&CellASICFault,
+	&WeakPackFault,
+	&FanMonitorFault,
+	&ThermistorFault,
+	&ExternalCommunicationFault,
+	&RedundantPowerSupplyFault,
+	&HighVoltageIsolationFault,
+	&InputPowerSupplyFault,
+	&ChargeLimitEnforcementFault
+};
+
+unsigned * BmsMsg1[8] = {
 	&SOC, &DCL, &CCL, &InternalTemperature, &HighestCellVoltage, 
 	&PackCurrent, &AverageTemperature, &CheckSum
 };
 
-int** BmsMsgs[BMS_ADDR_HIGH-BMS_ADDR_LOW] {
-	BmsMsg1
+unsigned ** BmsMsgs[BMS_ADDR_HIGH-BMS_ADDR_LOW+1] = {
+	BmsMsg1, BmsFaults1, BmsFaults2
 };
 
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
