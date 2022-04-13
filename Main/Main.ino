@@ -115,6 +115,7 @@ void loop() {
   if (debug){
 
     displayRequestEvent();
+    ETC();
     delay(1000);
 
     return;
