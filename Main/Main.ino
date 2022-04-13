@@ -54,7 +54,6 @@ enum ECUState {
 ECUState currentState;
 
 IntervalTimer Heartbeat;
-IntervalTimer CAN_EVENTS_Timer;
 
 // TODO: Marshal (2/14/22) Implement watchdog 
 // TODO: Marshal (2/14/22) Need to have a logging and error handling system, example (status/return codes)
@@ -76,6 +75,7 @@ int Direction = 1;
 int InverterEnabled = 1;
 int Duration = 0;
 
+// TODO: move to a display file
 // Display Parameters
 int Speed = 0;
 int Battery_Temp = 0;
@@ -112,31 +112,29 @@ void setup() {
   Wire.onReceive(displayReceiveEvent);
 
   // Configure CAN BUS 0 
-//  Can0.begin();
-//  Can0.setBaudRate(BAUD_RATE);
-//  Can0.setMaxMB(NUM_RX_MAILBOXES);
+  Can0.setBaudRate(250000);
+  Can0.onReceive(canSniff);
+  Can0.begin();
+//  Can0.setMaxMB(8);
 //  Can0.enableFIFO();
 //  Can0.enableFIFOInterrupt();
-//  Can0.onReceive(canSniff);
+  
+//  Can0.enableMBInterrupts(); // enables all mailboxes to be interrupt enabled
 //  Can0.mailboxStatus();
 
   // RMS CAN RX Mailbox
-  // Can0.setMBFilter(MB6, 0x123);
-  // Can0.setMB(MB6,RX,STD); // Set mailbox as receiving standard frames.
+//   Can0.setMBFilter(MB6, 0x123);
+//   Can0.setMB(MB6,RX,STD); // Set mailbox as receiving standard frames.
 
   // RMS CAN TX Mailbox
 //  Can0.setMBFilter(MB9, 0x0C0);
 //  Can0.setMB(MB9,TX); // Set mailbox as transmit
 
-//  sendInverterEnable();
+ sendInverterEnable();
 
   // RMS Command Message Heartbeat
-//  Heartbeat.priority(128);
-//  Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
-
-  // RMS trigger events periodically
-  // CAN_EVENTS_Timer.priority(129);
-  // CAN_EVENTS_Timer.begin(Can0.events, (HEARTBEAT / 2));
+ Heartbeat.priority(128);
+ Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
 
 }
 
@@ -147,9 +145,9 @@ void loop() {
    * value determines if machine needs to switch states.
    */
 
-//  Can0.events();
+//  Can0.mailboxStatus();
 
-  delay(5000);
+   Can0.events();
 
   return;
 

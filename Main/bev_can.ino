@@ -1,5 +1,26 @@
 #include "include/bev_can.h"
 
+FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
+CAN_message_t cmdMsg;
+
+void sendMessage(unsigned id, unsigned *buffer, unsigned len) {
+
+    if (buffer == nullptr)
+        return;
+    
+    CAN_message_t msg;
+    msg.id = id;
+    msg.flags.extended = 0;
+    
+    for (unsigned i=0; i<len; i++){
+        msg.buf[i] = buffer[i];
+    }
+
+    Can0.write(msg);
+
+    Serial.print("Wrote: ");
+    Serial.println(id);
+}
 
 /*
  * sendInverterEnable
@@ -62,7 +83,12 @@ void sendRMSHeartbeat(){
 void canSniff(const CAN_message_t &msg){
     printCANMsg(msg);	
 
-    if (msg.id >= RMS_ADDR_LOW && msg.id <= RMS_ADDR_HIGH) { }
+    return;
+    
+    if (msg.id >= RMS_ADDR_LOW && msg.id <= RMS_ADDR_HIGH) { 
+
+
+    }
     else if (msg.id >=BMS_ADDR_LOW && msg.id <= BMS_ADDR_HIGH) {
 
         /* Checksum - Byte 7
@@ -75,46 +101,47 @@ void canSniff(const CAN_message_t &msg){
             the values should be discarded.
          */
 
-        // Fault codes don't have checksums 
-        if (msg.id == BMS_FAULTS1) {
-            for (int i=0; i<8; i++){
-                *BmsFaults1[i] = (msg.buf[0] & (2 << i)) >> i;
-            }
+        // Checksum
+        switch (msg.id){
+            case 0x0: // BMS Fault Code 1
+                break;
+            case 0x1: // BMS Fault Code 2
+                break;
+            default:
+                // Expect all message to be 8 bytes in len
+                int sum = msg.id + 8;
+                for (int i=0; i<7; i++){
+                    sum += msg.buf[i];
+                }
 
-        } else if (msg.id == BMS_FAULTS2) {
-            for (int j=0; j<2; j++){
-              for (int i=0; i<16; i++){
-                  *BmsFaults2[i] = (msg.buf[j] & (2 << i)) >> i;
-              }
-            }
-        } else {
-            // Expect all message to be 8 bytes in len
+                sum &= ~8;
 
-            int sum = msg.id + 8;
-            for (int i=0; i<7; i++){
-              sum += msg.buf[i];
-            }
+                if (sum != msg.buf[7]){
+                    return; // Failed checksum
+                }
 
-            sum &= ~8;
+                break;
+        }
 
-            if (sum != msg.buf[7]){
-              return; // Failed checksum
-            }
-
-            // Assign signal value to global variables in bev_can.h
-            int index = msg.id - BMS_ADDR_LOW;
-            unsigned** stash = BmsMsgs[index];
-
-            for (int i=0; i<msg.len; i++){
-                *stash[i] = msg.buf[i];
-            }
-
+        // Assign to global values
+        if (msg.id == 0x00) // BMS Msg 1
+            return;
+        else if (msg.id == 0x00) // BMS Msg 2
+            return;
+        else if (msg.id == 0x0) // BMS Fault Code 1
+            return;
+        else if (msg.id == 0x0) // BMS Fault Code 2
+            return;
+        else
+        {
+            // Unknown Message
         }
 
 
-    }
-    else {} // unknown msg
 
+
+    }
+    else {} // Unknown Message 
 
 }
 

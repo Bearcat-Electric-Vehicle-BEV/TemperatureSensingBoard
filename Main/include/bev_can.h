@@ -8,7 +8,7 @@
  * https://github.com/tonton81/FlexCAN_T4
  */
 
-#define BAUD_RATE 1000000
+#define BAUD_RATE 250000
 #define HEARTBEAT 500000
 #define NUM_RX_MAILBOXES 2
 #define NUM_TX_MAILBOXES 2
@@ -42,7 +42,8 @@
 #define RMS_PARAMETER_MSG2 0x0C2
 #define RMS_ADDR_HIGH 0x0C2
 
-// TODO: implement signals
+unsigned ModuleATemperature;
+unsigned ModuleBTemperature;
 
 /*
  * BMS Specific Addresses
@@ -59,81 +60,47 @@
 #define BMS_ADDR_HIGH 0x6B3
 
 // BMS Parameter Signals 
-unsigned SOC;
-unsigned DCL; 
-unsigned CCL; 
-unsigned InternalTemperature;
-unsigned HighestCellVoltage;
-unsigned PackCurrent;
-unsigned AverageTemperature;
-unsigned CheckSum;
+extern unsigned SOC;
+extern unsigned DCL; 
+extern unsigned CCL; 
+extern unsigned InternalTemperature;
+extern unsigned HighestCellVoltage;
+extern unsigned PackCurrent;
+extern unsigned AverageTemperature;
+extern unsigned CheckSum;
 
 // BMS Fault Signals
-unsigned DischargeLimitEnforcementFault;
-unsigned ChargerSafteyRelayFault;
-unsigned InternalHardwareFault;
-unsigned InternalHeatsinkThermistorFault;
-unsigned InternalSoftwareFault;
-unsigned HighestCellVoltageTooHighFault;
-unsigned LowestCellVoltageTooLowFault;
-unsigned PackTooHotFault;
-unsigned DTCSTATUS_RESERVED; 
+extern unsigned DischargeLimitEnforcementFault;
+extern unsigned ChargerSafteyRelayFault;
+extern unsigned InternalHardwareFault;
+extern unsigned InternalHeatsinkThermistorFault;
+extern unsigned InternalSoftwareFault;
+extern unsigned HighestCellVoltageTooHighFault;
+extern unsigned LowestCellVoltageTooLowFault;
+extern unsigned PackTooHotFault;
+extern unsigned DTCSTATUS_RESERVED; 
 
-unsigned InternalCommunicationFault;
-unsigned CellBalancingStuckOffFault;
-unsigned WeakCellFault;
-unsigned LowCellVoltageFault;
-unsigned OpenWiringFault;
-unsigned CurrentSensorFault;
-unsigned HighestCellVoltageOver5VFault;
-unsigned CellASICFault;
-unsigned WeakPackFault;
-unsigned FanMonitorFault;
-unsigned ThermistorFault;
-unsigned ExternalCommunicationFault;
-unsigned RedundantPowerSupplyFault;
-unsigned HighVoltageIsolationFault;
-unsigned InputPowerSupplyFault;
-unsigned ChargeLimitEnforcementFault;
+extern unsigned InternalCommunicationFault;
+extern unsigned CellBalancingStuckOffFault;
+extern unsigned WeakCellFault;
+extern unsigned LowCellVoltageFault;
+extern unsigned OpenWiringFault;
+extern unsigned CurrentSensorFault;
+extern unsigned HighestCellVoltageOver5VFault;
+extern unsigned CellASICFault;
+extern unsigned WeakPackFault;
+extern unsigned FanMonitorFault;
+extern unsigned ThermistorFault;
+extern unsigned ExternalCommunicationFault;
+extern unsigned RedundantPowerSupplyFault;
+extern unsigned HighVoltageIsolationFault;
+extern unsigned InputPowerSupplyFault;
+extern unsigned ChargeLimitEnforcementFault;
 
-unsigned * BmsFaults1[8] = {
-	&DischargeLimitEnforcementFault, &ChargerSafteyRelayFault,
-	&InternalHardwareFault, &InternalHeatsinkThermistorFault,
-	&InternalSoftwareFault, &HighestCellVoltageTooHighFault,
-	&LowestCellVoltageTooLowFault, &PackTooHotFault
-};
+extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
+extern CAN_message_t cmdMsg;
 
-unsigned * BmsFaults2[16] = {
-	&InternalCommunicationFault,
-	&CellBalancingStuckOffFault,
-	&WeakCellFault,
-	&LowCellVoltageFault,
-	&OpenWiringFault,
-	&CurrentSensorFault,
-	&HighestCellVoltageOver5VFault,
-	&CellASICFault,
-	&WeakPackFault,
-	&FanMonitorFault,
-	&ThermistorFault,
-	&ExternalCommunicationFault,
-	&RedundantPowerSupplyFault,
-	&HighVoltageIsolationFault,
-	&InputPowerSupplyFault,
-	&ChargeLimitEnforcementFault
-};
-
-unsigned * BmsMsg1[8] = {
-	&SOC, &DCL, &CCL, &InternalTemperature, &HighestCellVoltage, 
-	&PackCurrent, &AverageTemperature, &CheckSum
-};
-
-unsigned ** BmsMsgs[BMS_ADDR_HIGH-BMS_ADDR_LOW+1] = {
-	BmsMsg1, BmsFaults1, BmsFaults2
-};
-
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-CAN_message_t cmdMsg;
-
+void sendMessage(unsigned id, unsigned *buffer, unsigned len);
 void canSniff(const CAN_message_t &msg);
 void printCANMsg(const CAN_message_t &msg);
 void sendInverterEnable();
