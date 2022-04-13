@@ -244,10 +244,11 @@ bool ETC() {
   // assume range is 0 - 1023 for now
   accel_val = (accel_val1 + accel_val2) / 2.0;
   
-  // TODO: Call CAN function to read current Torque value from motor controller  
+  // TODO: Call CAN function to read current Torque and speed values from motor controller  
   double currentTorque = 0;
+  double currentSpeed = 0;
   
-  double targetTorqueValue = getTorqueValueFromCurve(pedalInputCurve, accel_val, currentTorque);
+  double targetTorqueValue = getTorqueValueFromCurve(accel_val, currentTorque, currentSpeed);
 
   //Call CAN function to send target Torque value to motor controller
 
@@ -257,12 +258,12 @@ bool ETC() {
 
 bool min(double val1, double val2) {
   if(val1 <= val2) {return val1;}
-  else {return val2;)
+  else {return val2;}
 }
 
 bool max(double val1, double val2) {
   if(val1 >= val2) {return val1;}
-  else {return val2;)
+  else {return val2;}
 }
 
 // max torque = 120
@@ -286,23 +287,17 @@ double getTorqueValueFromCurve(double currentAccelPos, double currentTorque, dou
   }
 }
   
-}
-  
 bool readyToGoWait(){
   /* Main Loop Code Here */
 
-  if(!ETC()) {
-    // Something went wrong, call error function
-  }
-
-  val = analogRead(17); // TODO: magic number
-  val = val-lowerBound;
-  return false;
-
-  // TODO: remove debug code
-  val = val/range;
-  val = val*100;
-  Serial.println("AccelPedal1 Percentage"+(String)val);
+//  val = analogRead(17); // TODO: magic number
+//  val = val-lowerBound;
+//  return false;
+//
+//  // TODO: remove debug code
+//  val = val/range;
+//  val = val*100;
+//  Serial.println("AccelPedal1 Percentage"+(String)val);
   delay(250);
   return false;
 }
