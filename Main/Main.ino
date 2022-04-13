@@ -72,13 +72,9 @@ double startTime;
 double prechargeTime;
 bool timerStarted=false;
 
-// Curve that maps accelerator pedal position to torque
-String pedalInputCurve = "120X";
+int ACCEL_MAXPOS = 1023;
+int ACCEL_MINPOS = 0;
 
-//upper bound of potentiometer
-int upperBound = 940;
-int lowerBound = 0;
-int range = upperBound-lowerBound;
 //outgoing signal table true means it should be High false means it should be low
 
 // TODO: Determine if we should store these values 
@@ -243,6 +239,8 @@ bool ETC() {
     return false;
   }
 
+  // Most likely zHave to change this
+  // assume range is 0 - 1023 for now
   accel_val = (accel_val1 + accel_val2) / 2.0;
   
   // TODO: Call CAN function to read current Torque value from motor controller  
@@ -256,10 +254,36 @@ bool ETC() {
   
 }
 
-double getTorqueValueFromCurve(String curve, double currentAccelPos, double currentTorque) {
-  
-  // TODO: Figure out what sort of throttle response do we need, and modelling it with a polynormal curve
-  return 120;
+bool min(double val1, double val2) {
+  if(val1 <= val2) {return val1;}
+  else {return val2;)
+}
+
+bool max(double val1, double val2) {
+  if(val1 >= val2) {return val1;}
+  else {return val2;)
+}
+
+// max torque = 120
+// min acc pos = 0
+// max acc pos = 1023
+
+// TODO: Figure out what sort of throttle response do we need, and modelling it with a polynormal curve
+double getTorqueValueFromCurve(double currentAccelPos, double currentTorque, double currentSpeed) {
+    
+  if(currentSpeed < 20) {
+    if(currentAccelPos > 0) {
+      return min((currentAccelPos+500 / ACCEL_MAXPOS) * 120, 120);
+    }
+  }
+  else if(currentSpeed < 70) {
+    return (currentAccelPos / ACCEL_MAXPOS) * 120;
+  }
+
+  else {
+    return (ACCEL_MAXPOS / 100.0) * 70;
+  }
+}
   
 }
   
