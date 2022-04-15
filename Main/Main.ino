@@ -146,9 +146,9 @@ void loop() {
    */
 
     Can0.events();
-    displayRequestEvent();
-    ETC();
-    delay(1000);
+//    displayRequestEvent();
+//    ETC();
+//    delay(1000);
 
 
   return;
