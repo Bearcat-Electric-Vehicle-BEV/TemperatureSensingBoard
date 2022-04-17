@@ -36,6 +36,7 @@
 #define PIN_SHUTDOWN_TTL_OK 12
 #define PIN_CAN1_RX 23
 #define PIN_CAN1_TX 22
+#define PIN_CAN_TRANS_STDBY 33
 #define PIN_SDA 19
 #define PIN_SCL 18
 #define PIN_ACCEL_0 17
@@ -85,7 +86,7 @@ int Range_Mins = 0;
 
 void setup() {
  
-  Serial.begin(38400);
+  Serial.begin(115200); delay(400);
   currentState = INIT;
 
   // Set Pin Modes
@@ -95,8 +96,9 @@ void setup() {
   pinMode(PIN_PRECHARGE_FINISHED, INPUT);
   pinMode(PIN_READY_TO_GO, OUTPUT);
   pinMode(PIN_SHUTDOWN_TTL_OK, INPUT);
-  pinMode(PIN_CAN1_RX, INPUT);
-  pinMode(PIN_CAN1_TX, OUTPUT); 
+//  pinMode(PIN_CAN1_RX, INPUT);
+//  pinMode(PIN_CAN1_TX, OUTPUT); 
+  pinMode(PIN_CAN_TRANS_STDBY, OUTPUT);
   pinMode(PIN_SDA, OUTPUT);
   pinMode(PIN_SCL, OUTPUT);
   pinMode(PIN_ACCEL_0, INPUT);
@@ -107,17 +109,20 @@ void setup() {
   pinMode(PIN_RESET, INPUT);
  
   // Teensy I2C Slave Code
-  Wire.begin(0x40);
-  Wire.onRequest(displayRequestEvent);
-  Wire.onReceive(displayReceiveEvent);
+//  Wire.begin(0x40);
+//  Wire.onRequest(displayRequestEvent);
+//  Wire.onReceive(displayReceiveEvent);
 
   // Configure CAN BUS 0 
-  Can0.setBaudRate(250000);
-  Can0.onReceive(canSniff);
+  Serial.begin(115200); delay(400);
+  digitalWrite(PIN_CAN_TRANS_STDBY, LOW); /* optional tranceiver enable pin */
   Can0.begin();
-//  Can0.setMaxMB(8);
-//  Can0.enableFIFO();
-//  Can0.enableFIFOInterrupt();
+  Can0.setBaudRate(250000);
+  Can0.setMaxMB(16);
+  Can0.enableFIFO();
+  Can0.enableFIFOInterrupt();
+  Can0.onReceive(canSniff);
+  Can0.mailboxStatus();
   
 //  Can0.enableMBInterrupts(); // enables all mailboxes to be interrupt enabled
 //  Can0.mailboxStatus();
@@ -145,10 +150,10 @@ void loop() {
    * value determines if machine needs to switch states.
    */
 
+
     Can0.events();
-//    displayRequestEvent();
-//    ETC();
-//    delay(1000);
+    ETC();
+    delay(1000);
 
 
   return;
