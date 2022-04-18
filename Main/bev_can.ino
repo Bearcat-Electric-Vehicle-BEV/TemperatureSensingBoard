@@ -199,11 +199,9 @@ void canSniff(const CAN_message_t &msg){
                 break;
 
             case RMS_TORQUE_AND_TIMER_INFORMATION:
-                // TODO
-                break;
                 CommandedTorque = msg.buf[0] | (msg.buf[1] << 8);
                 TorqueFeedback = msg.buf[2] | (msg.buf[3] << 8);
-                PowerOnTimer = msg.buf[4] | msg.buf[5] | msg.buf[6] | msg.buf[7]; 
+                PowerOnTimer = msg.buf[4] | (msg.buf[5] << 8) | (msg.buf[6] << 16) | (msg.buf[7] << 32); 
                 break;
             
             case RMS_MODULATION_INDEX_AND_FLUX_WEAKENING_OUTPUT_INFORMATION:
