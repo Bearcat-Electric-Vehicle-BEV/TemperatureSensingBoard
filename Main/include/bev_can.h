@@ -2,6 +2,8 @@
 #define BEV_CAN_H
 
 #include <FlexCAN_T4.h>
+#include <stdlib.h>
+#include <stdint.h>
 
 /*
  * CAN Library Used
@@ -42,8 +44,28 @@
 #define RMS_PARAMETER_MSG2 0x0C2
 #define RMS_ADDR_HIGH 0x0C2
 
-unsigned ModuleATemperature;
-unsigned ModuleBTemperature;
+extern uint16_t ModuleATemperature, ModuleBTemperature, ModuleCTemperature, GateDriverBoardTemperature;
+extern uint16_t ControlBoardTemperature, RTD1Temperature, RTD2Temperature, RTD3Temperature;
+extern uint16_t RTD4Temperature, RTD5Temperature, MotorTemperature, TorqueShudder;
+extern uint16_t AnalogInput1, AnalogInput2, AnalogInput3, AnalogInput4;
+extern uint8_t DigitalInput1, DigitalInput2, DigitalInput3, DigitalInput4, DigitalInput5, DigitalInput6;
+extern uint16_t MotorAngle, MotorSpeed, ElectricalOutputFreq, DeltaResolver;
+extern uint16_t PhaseACurrent, PhaseBCurrent, PhaseCCurrent, DCBusCurrent;
+extern uint16_t DCBusVoltage, OutputVoltage, PhaseABVoltage, PhaseBCVoltage;
+extern uint16_t FluxCommand, FluxFeedback, idFeedback, iqFeedback;
+extern uint16_t ReferenceVoltage15, ReferenceVoltage25, ReferenceVoltage50, SystemVoltage12;
+extern uint16_t VSMState; extern uint8_t InverterState, RelayState, InverterRunMode, InverterCommandMode, InverterEnableState, InverterEnableLockout, DirectionCommand;
+extern uint16_t POSTFaultLo, POSTFaultHi, RunFaultLo, RunFaultHi;
+extern uint16_t CommandedTorque, TorqueFeedback; extern uint32_t PowerOnTimer;
+extern uint16_t ModulationIndex, FluxWeakeningOutput, IdCommand, IqCommand;
+extern uint16_t EEPROMVersion, SoftwareVersion, DataCode_mmdd, DataCode_yyyy;
+extern uint16_t gamma_resolver, gamm_observer, sin_corr;
+extern uint16_t cos_corr, la_corr, lb_corr;
+extern uint16_t lc_corr, vdc, iq_cmd;
+extern uint16_t id_cmd, modulation, flux_weak_out;
+extern uint16_t vq_cmd, vd_cmd, vqs_cmd;
+extern uint16_t voltage12_pwmfreq, run_faults_lo, run_faults_hi;
+
 
 /*
  * BMS Specific Addresses
