@@ -57,6 +57,9 @@ void sendInverterEnable() {
  */
 void sendRMSHeartbeat(){
 
+  Serial.print("Torque value being sent is: ");
+  Serial.println(TorqueCommand);
+  
   cmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
   cmdMsg.flags.extended = 0;
   cmdMsg.len = 8;
@@ -70,6 +73,10 @@ void sendRMSHeartbeat(){
   cmdMsg.buf[5] = int(InverterEnabled);
   cmdMsg.buf[6] = 0;
   cmdMsg.buf[7] = 0;
+
+  for ( uint8_t i = 0; i < 8; i++ ) {
+        Serial.print(cmdMsg.buf[i], HEX); Serial.print(" ");
+    } Serial.println();
   
   Can0.write(cmdMsg);
 

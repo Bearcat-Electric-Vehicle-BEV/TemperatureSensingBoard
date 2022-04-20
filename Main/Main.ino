@@ -149,13 +149,10 @@ void loop() {
    * Function corresponding to state is called inside conditional. Boolean 
    * value determines if machine needs to switch states.
    */
-
-
+   
     Can0.events();
     ETC();
-    delay(1000);
-
-
+    
   return;
 
 
@@ -282,28 +279,41 @@ bool ETC() {
     return false;
   }
 
-  // Most likely zHave to change this
+  // Most likely we have to change this
   // assume range is 0 - 1023 for now
-  accel_val = (accel_val1 + accel_val2) / 2.0;
+  accel_val = ((accel_val1 + accel_val2) / 2.0)/1023;
+
+  // temp, set accel_val to random
+  accel_val = random(1023);
+//  Serial.print("Accel random value = ");
+//  Serial.print(accel_val);
+//  Serial.print(" ");
   
   // TODO: Call CAN function to read current Torque and speed values from motor controller  
   double currentTorque = 0;
-  double currentSpeed = 0;
+  double currentSpeed = random(100);
+
+//  Serial.print("Speed rand val = ");
+//  Serial.print(currentSpeed);
+//  Serial.print(" ");
   
   double targetTorqueValue = getTorqueValueFromCurve(accel_val, currentTorque, currentSpeed);
 
-  //Call CAN function to send target Torque value to motor controller
-
+  //Send new torque value to motor controller by setting this global variable, which is later sent to the MC via the heartbeat signal
+  TorqueCommand = targetTorqueValue;
+//  Serial.print("Target torque = ");
+//  Serial.println(TorqueCommand);
+  
   return true;
   
 }
 
-bool min(double val1, double val2) {
+double min(double val1, double val2) {
   if(val1 <= val2) {return val1;}
   else {return val2;}
 }
 
-bool max(double val1, double val2) {
+double max(double val1, double val2) {
   if(val1 >= val2) {return val1;}
   else {return val2;}
 }
@@ -314,18 +324,18 @@ bool max(double val1, double val2) {
 
 // TODO: Figure out what sort of throttle response do we need, and modelling it with a polynormal curve
 double getTorqueValueFromCurve(double currentAccelPos, double currentTorque, double currentSpeed) {
-    
-  if(currentSpeed < 20) {
-    if(currentAccelPos > 0) {
-      return min((currentAccelPos+500 / ACCEL_MAXPOS) * 120, 120);
+  
+  if(currentSpeed < 20.0) {
+    if(currentAccelPos > 0.0) {
+      return min((currentAccelPos+500 / ACCEL_MAXPOS) * 120.0, 120.0);
     }
   }
-  else if(currentSpeed < 70) {
-    return (currentAccelPos / ACCEL_MAXPOS) * 120;
+  else if(currentSpeed < 70.0) {
+    return min((currentAccelPos / ACCEL_MAXPOS) * 120.0,120.0);
   }
 
   else {
-    return (ACCEL_MAXPOS / 100.0) * 70;
+    return min((currentAccelPos / ACCEL_MAXPOS) * 70.0, 120.0);
   }
 }
   
