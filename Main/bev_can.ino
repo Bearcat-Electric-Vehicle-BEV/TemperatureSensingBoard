@@ -1,4 +1,5 @@
 #include "include/bev_can.h"
+#include "include/bev_sd.h"
 
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 CAN_message_t cmdMsg;
@@ -24,6 +25,10 @@ uint16_t lc_corr=0, vdc=0, iq_cmd=0;
 uint16_t id_cmd=0, modulation=0, flux_weak_out=0;
 uint16_t vq_cmd=0, vd_cmd=0, vqs_cmd=0;
 uint16_t voltage12_pwmfreq=0, run_faults_lo=0, run_faults_hi=0;
+
+unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurrent, AverageTemperature, CheckSum;
+unsigned DTC_STATUS_1[8];
+unsigned DTC_STATUS_2[16];
 
 void sendMessage(unsigned id, unsigned *buffer, unsigned len) {
 
@@ -103,9 +108,10 @@ void sendRMSHeartbeat(){
  * Callback function that assigns incoming signals to globals 
  */
 void canSniff(const CAN_message_t &msg){
-    printCANMsg(msg);	
-
-    return;
+//    printCANMsg(msg);
+    char buffer[100];
+    CAN2Str(msg, buffer, 100);
+    log_2_sd(buffer, "BMS.log");
     
     if (msg.id >= RMS_ADDR_LOW && msg.id <= RMS_ADDR_HIGH) { 
 
@@ -240,44 +246,44 @@ void canSniff(const CAN_message_t &msg){
          4. If the computed checksum doesn't equal the provided checksum, 
             the values should be discarded.
          */
+                
+            // Checksum
+            // Expect all message to be 8 bytes in len
+            int sum = msg.id + 8;
+            for (int i=0; i<7; i++){
+                sum += msg.buf[i];
+            }
+
+            sum &= ~8;
+
+            if (sum != msg.buf[7]){
+                return; // Failed checksum
+            }
 
         switch (msg.id){
-            case 0x0: // BMS Fault Code 1
+            case BMS_MSG1:
+                SOC = msg.buf[0];
+                DCL = msg.buf[1];
+                CCL = msg.buf[2];
+                InternalTemperature = msg.buf[3];
+                HighestCellVoltage = msg.buf[4];
+                PackCurrent = msg.buf[5];
+                AverageTemperature = msg.buf[6];
+                // CheckSum = msg.buf[7];
                 break;
-            case 0x1: // BMS Fault Code 2
+            case BMS_FAULTS1: 
+                DTC_STATUS_1[0] = msg.buf[0];
+                // CheckSum = msg.buf[7];
                 break;
+            case BMS_FAULTS2: 
+                DTC_STATUS_2[0] = msg.buf[0];
+                DTC_STATUS_2[1] = msg.buf[1];
+                // CheckSum = msg.buf[7];
+                break;
+            
             default:
-                // Expect all message to be 8 bytes in len
-                int sum = msg.id + 8;
-                for (int i=0; i<7; i++){
-                    sum += msg.buf[i];
-                }
-
-                sum &= ~8;
-
-                if (sum != msg.buf[7]){
-                    return; // Failed checksum
-                }
-
                 break;
         }
-
-        // Assign to global values
-        if (msg.id == 0x00) // BMS Msg 1
-            return;
-        else if (msg.id == 0x00) // BMS Msg 2
-            return;
-        else if (msg.id == 0x0) // BMS Fault Code 1
-            return;
-        else if (msg.id == 0x0) // BMS Fault Code 2
-            return;
-        else
-        {
-            // Unknown Message
-        }
-
-
-
 
     }
     else {} // Unknown Message 
@@ -300,5 +306,18 @@ void printCANMsg(const CAN_message_t &msg){
     for ( uint8_t i = 0; i < msg.len; i++ ) {
         Serial.print(msg.buf[i], HEX); Serial.print(" ");
     } Serial.println();
+
+}
+
+void CAN2Str(const CAN_message_t &msg, char *buffer, size_t len) {
+
+    snprintf(buffer, len, "MB:%d OVERRUN:%d LEN:%d EXT:%d TS:%5d ID:%X BUFFER: ", 
+              msg.mb, msg.flags.overrun, msg.len, msg.flags.extended, 
+              msg.timestamp, msg.id);
+    
+    for ( uint8_t i = 0; i < msg.len; i++ ) {
+        snprintf(buffer, len, "%s%X ", buffer, msg.buf[i]);
+    }
+    snprintf(buffer, len, "%s", buffer);
 
 }
