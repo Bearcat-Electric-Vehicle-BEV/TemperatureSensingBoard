@@ -125,7 +125,7 @@ void setup() {
   Can0.onReceive(canSniff);
   Can0.mailboxStatus();
   
-//  Can0.enableMBInterrupts(); // enables all mailboxes to be interrupt enabled
+  Can0.enableMBInterrupts(); // enables all mailboxes to be interrupt enabled
 //  Can0.mailboxStatus();
 
   // RMS CAN RX Mailbox
@@ -136,11 +136,11 @@ void setup() {
 //  Can0.setMBFilter(MB9, 0x0C0);
 //  Can0.setMB(MB9,TX); // Set mailbox as transmit
 
- sendInverterEnable();
+  sendInverterEnable();
 
   // RMS Command Message Heartbeat
- Heartbeat.priority(128);
- Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
+// Heartbeat.priority(128);
+// Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
 
 }
 

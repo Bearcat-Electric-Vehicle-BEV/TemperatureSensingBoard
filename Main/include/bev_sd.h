@@ -4,7 +4,7 @@
 #include <SPI.h>
 #include <SD.h>
 
-bool log_2_sd(const char* dataString);
+bool log_2_sd(const char* dataString, const char* fname);
 
 
 #endif // BEV_SD_H
