@@ -80,27 +80,26 @@ extern uint16_t voltage12_pwmfreq, run_faults_lo, run_faults_hi;
 #define BMS_MSG1 0x6B1
 #define BMS_FAULTS1 0x6B2
 #define BMS_FAULTS2 0x6B3
-#define BMS_ADDR_HIGH 0x6B3
-
-// Checksum Flag
-extern unsigned failedChecksum;
+#define BMS_FAULTS3 0x6B4
+#define BMS_ADDR_HIGH 0x6B4
 
 // BMS Parameter Signals 
 extern unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurrent, AverageTemperature, CheckSum;
 
 // BMS Fault Signals
-extern unsigned DTC_STATUS_1[8];
-extern unsigned DTC_STATUS_2[16];
+extern uint32_t bms_faults[3];
 
 extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 extern CAN_message_t cmdMsg;
 
+void dump_fault_codes();
+bool checkFaultCodes();
 void sendMessage(unsigned id, unsigned *buffer, unsigned len);
 void canSniff(const CAN_message_t &msg);
 void printCANMsg(const CAN_message_t &msg);
 void sendInverterEnable();
 void sendRMSHeartbeat();
-void CAN2Str(const CAN_message_t &msg, char *buffer);
+void can_2_str(const CAN_message_t &msg, char *buffer, size_t len);
 
 
 #endif // BEV_CAN_H

@@ -1,5 +1,5 @@
 #include "include/bev_can.h"
-#include "include/bev_sd.h"
+#include "include/bev_logger.h"
 
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 CAN_message_t cmdMsg;
@@ -25,10 +25,30 @@ uint16_t lc_corr=0, vdc=0, iq_cmd=0;
 uint16_t id_cmd=0, modulation=0, flux_weak_out=0;
 uint16_t vq_cmd=0, vd_cmd=0, vqs_cmd=0;
 uint16_t voltage12_pwmfreq=0, run_faults_lo=0, run_faults_hi=0;
+uint8_t Diagnostic_Index, Diagnostic_SubIndex, Record_0, Record_1, Record_2, Record_3, Record_4, Record_5;
 
 unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurrent, AverageTemperature, CheckSum;
-unsigned DTC_STATUS_1[8];
-unsigned DTC_STATUS_2[16];
+uint32_t bms_faults[3];
+
+bool checkFaultCodes() {
+
+    // Motor Controller 
+    for (uint8_t i=0; i<16; i++) {
+        if (POSTFaultLo & (1 << i)) return true;
+        if (POSTFaultHi & (1 << i)) return true;
+        if (RunFaultLo & (1 << i)) return true;
+        if (RunFaultHi & (1 << i)) return true;
+    }
+    
+    // BMS
+    for (uint8_t i=0; i<sizeof(bms_faults)/sizeof(uint32_t); i++) {
+        if (bms_faults[i]) return true;
+    }
+
+    return false;
+
+}
+
 
 void sendMessage(unsigned id, unsigned *buffer, unsigned len) {
 
@@ -45,8 +65,7 @@ void sendMessage(unsigned id, unsigned *buffer, unsigned len) {
 
     Can0.write(msg);
 
-    Serial.print("Wrote: ");
-    Serial.println(id);
+    Log.info(msg);
 }
 
 /*
@@ -72,6 +91,7 @@ void sendInverterEnable() {
 
     Can0.write(cmdMsg);
 
+    Log.info(cmdMsg);
 }
 
 /*
@@ -84,21 +104,23 @@ void sendInverterEnable() {
  */
 void sendRMSHeartbeat(){
 
-  cmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
-  cmdMsg.flags.extended = 0;
-  cmdMsg.len = 8;
+    cmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
+    cmdMsg.flags.extended = 0;
+    cmdMsg.len = 8;
 
-  // Construct msg
-  cmdMsg.buf[0] = (TorqueCommand * 10) % 256;
-  cmdMsg.buf[1] = int(TorqueCommand * 10 / 256);
-  cmdMsg.buf[2] = SpeedCommand % 256;
-  cmdMsg.buf[3] = int(SpeedCommand / 256);
-  cmdMsg.buf[4] = Direction;
-  cmdMsg.buf[5] = int(InverterEnabled);
-  cmdMsg.buf[6] = 0;
-  cmdMsg.buf[7] = 0;
-  
-  Can0.write(cmdMsg);
+    // Construct msg
+    cmdMsg.buf[0] = (TorqueCommand * 10) % 256;
+    cmdMsg.buf[1] = int(TorqueCommand * 10 / 256);
+    cmdMsg.buf[2] = SpeedCommand % 256;
+    cmdMsg.buf[3] = int(SpeedCommand / 256);
+    cmdMsg.buf[4] = Direction;
+    cmdMsg.buf[5] = int(InverterEnabled);
+    cmdMsg.buf[6] = 0;
+    cmdMsg.buf[7] = 0;
+    
+    Can0.write(cmdMsg);
+
+    Log.info(cmdMsg);
 
 }
 
@@ -108,10 +130,7 @@ void sendRMSHeartbeat(){
  * Callback function that assigns incoming signals to globals 
  */
 void canSniff(const CAN_message_t &msg){
-//    printCANMsg(msg);
-    char buffer[100];
-    CAN2Str(msg, buffer, 100);
-    log_2_sd(buffer, "BMS.log");
+    Log.info(msg);
     
     if (msg.id >= RMS_ADDR_LOW && msg.id <= RMS_ADDR_HIGH) { 
 
@@ -207,7 +226,7 @@ void canSniff(const CAN_message_t &msg){
             case RMS_TORQUE_AND_TIMER_INFORMATION:
                 CommandedTorque = msg.buf[0] | (msg.buf[1] << 8);
                 TorqueFeedback = msg.buf[2] | (msg.buf[3] << 8);
-                PowerOnTimer = msg.buf[4] | (msg.buf[5] << 8) | (msg.buf[6] << 16) | (msg.buf[7] << 32); 
+                PowerOnTimer = msg.buf[4] | (msg.buf[5] << 8) | (msg.buf[6] << 16) | (msg.buf[7] << 24); 
                 break;
             
             case RMS_MODULATION_INDEX_AND_FLUX_WEAKENING_OUTPUT_INFORMATION:
@@ -225,7 +244,14 @@ void canSniff(const CAN_message_t &msg){
                 break;
             
             case RMS_DIAGNOSTIC_DATA:
-                // TODO
+                Diagnostic_Index = msg.buf[0];
+                Diagnostic_SubIndex = msg.buf[1];
+                Record_0 = msg.buf[2];
+                Record_1 = msg.buf[3];
+                Record_2 = msg.buf[4];
+                Record_3 = msg.buf[5];
+                Record_4 = msg.buf[6];
+                Record_5 = msg.buf[7];
                 break;
             
             default:
@@ -257,7 +283,8 @@ void canSniff(const CAN_message_t &msg){
             sum &= ~8;
 
             if (sum != msg.buf[7]){
-                return; // Failed checksum
+                Log.error("Failed checksum");
+                return;
             }
 
         switch (msg.id){
@@ -269,16 +296,15 @@ void canSniff(const CAN_message_t &msg){
                 HighestCellVoltage = msg.buf[4];
                 PackCurrent = msg.buf[5];
                 AverageTemperature = msg.buf[6];
-                // CheckSum = msg.buf[7];
                 break;
             case BMS_FAULTS1: 
-                DTC_STATUS_1[0] = msg.buf[0];
-                // CheckSum = msg.buf[7];
+                bms_faults[0] = msg.buf[0];
                 break;
             case BMS_FAULTS2: 
-                DTC_STATUS_2[0] = msg.buf[0];
-                DTC_STATUS_2[1] = msg.buf[1];
-                // CheckSum = msg.buf[7];
+                bms_faults[1] = msg.buf[0] | (msg.buf[1] << 8);
+                break;
+            case BMS_FAULTS3: 
+                bms_faults[2] = msg.buf[0];
                 break;
             
             default:
@@ -290,28 +316,21 @@ void canSniff(const CAN_message_t &msg){
 
 }
 
-/*
- * printCANMsg 
- *
- * Prints a CAN msg to the Serial Console
- */
-void printCANMsg(const CAN_message_t &msg){
-    Serial.print("MB "); Serial.print(msg.mb);
-    Serial.print("  OVERRUN: "); Serial.print(msg.flags.overrun);
-    Serial.print("  LEN: "); Serial.print(msg.len);
-    Serial.print(" EXT: "); Serial.print(msg.flags.extended);
-    Serial.print(" TS: "); Serial.print(msg.timestamp);
-    Serial.print(" ID: "); Serial.print(msg.id, HEX);
-    Serial.print(" Buffer: ");
-    for ( uint8_t i = 0; i < msg.len; i++ ) {
-        Serial.print(msg.buf[i], HEX); Serial.print(" ");
-    } Serial.println();
+void dump_fault_codes() {
+    char buffer[200];
+    snprintf(buffer, 200, 
+    "POSTFaultLo:%d,POSTFaultHi:%d,RunFaultLo:%d,RunFaultHi:%d"
+    "DTC_Status_1:%d,DTC_Status_2:%d,Failsafe_Statuses:%d",
+    POSTFaultLo,POSTFaultHi,RunFaultLo, RunFaultHi,
+    bms_faults[0],bms_faults[1],bms_faults[2]);
+
+    Log.error(buffer);
 
 }
 
-void CAN2Str(const CAN_message_t &msg, char *buffer, size_t len) {
+void can_2_str(const CAN_message_t &msg, char *buffer, size_t len) {
 
-    snprintf(buffer, len, "MB:%d OVERRUN:%d LEN:%d EXT:%d TS:%5d ID:%X BUFFER: ", 
+    snprintf(buffer, len, "MB:%d OVERRUN:%d LEN:%d EXT:%d TS:%05d ID:%04X BUFFER: ", 
               msg.mb, msg.flags.overrun, msg.len, msg.flags.extended, 
               msg.timestamp, msg.id);
     
