@@ -27,6 +27,8 @@
 #include "include/bev_logger.h"
 #include "include/bev_etc.h"
 
+#include "Watchdog_t4.h"
+
 #define PIN_VEHICLE_PWR 2
 #define PIN_Brake_Light 5
 #define PIN_ECU_OK 9
@@ -71,7 +73,8 @@ static const char *STATE_STRING[] = {
 ECUState currentState;
 IntervalTimer Heartbeat;
 
-// TODO: Marshal (2/14/22) Implement watchdog 
+// https://github.com/tonton81/WDT_T4
+WDT_T4<WDT1> wdt;
 
 // RMS Command Parameters 
 int TorqueCommand = 0;
@@ -92,6 +95,10 @@ void change_state(ECUState newState) {
     char buffer[100];
     snprintf(buffer, 100, "ENTERED %s state", STATE_STRING[newState]);
     Log.info(buffer);
+}
+
+void watchdogCallback() {
+  Log.critical("Watchdog timer not reset!!! Resetting ECU!!!");
 }
 
 void setup() {
@@ -152,6 +159,14 @@ void setup() {
   Heartbeat.priority(128);
   Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
 
+  // Initialize the watchdog timer
+  WDT_timings_t config;
+  config.trigger = 5; /* in seconds, 0->128 */
+  config.timeout = 10; /* in seconds, 0->128 */
+  config.callback = watchdogCallback;
+  wdt.begin(config);
+
+
 }
 
 void loop() {
@@ -160,6 +175,9 @@ void loop() {
    * Function corresponding to state is called inside conditional. Boolean 
    * value determines if machine needs to switch states.
    */
+
+  // Watchdog reset
+  wdt.feed();
 
   Can0.events();
 
@@ -239,28 +257,27 @@ void loop() {
 void carInit(){
   // Initialization done in setup(), function here for completeness
   digitalWrite(PIN_ECU_OK, LOW);
-  
-  // TODO: determine if busy waiting is the best strategy
-//  while (digitalRead(PRECHARGE_FINISHED) != HIGH);
-
   change_state(RESET);
-
 }
 
 void carReset(){
+  // TODO (Marsh May 2022): what memory needs reset?
+
   digitalWrite(PIN_ECU_OK, LOW);
-  // digitalRead(PIN_PRECHARGE_FINISHED);
-  // TODO: Marshal (2/14/22) Reset memory when memory is implemented
-
-  // Passed reset
-  change_state(HV_READY_WAIT);
-
-  // If Failed to RESET
-  change_state(ERROR_STATE);
+  
+  if (digitalRead(PIN_PRECHARGE_FINISHED) == HIGH) {
+      change_state(PRE_HV_CHECK);
+  } 
+  else {
+    // If Failed to RESET
+    change_state(ERROR_STATE);
+  }
 
 }
 
 void resetConfirm(){
+  // TODO (marsh May 2022): is this state necessary?
+
 }
   
 void error(){
@@ -269,7 +286,7 @@ void error(){
     digitalWrite(PIN_ECU_OK, LOW);
 
     // Inverter enable sends a 0 torque command to stop motor
-    sendInverterEnable();
+    sendInverterEnable(); // todo: make a disable command
     Heartbeat.end();
 
     // TODO: prepare for shutdown or something? 
@@ -282,17 +299,28 @@ void routineCheck(){
 void preHVCheck(){
   // TODO: add checks
 
+  // Check BMS values make sense
+
+  // Check that motor controller make sense
+
+  // Check that display is online
+
+  // check can-bus is online
+
+
 }
 
 void HVReadyWait(){
-//  digitalWrite(PIN_ECU_OK, HIGH);
-//  digitalWrite(PIN_HV_READY, HIGH);
-//  return true;
+  digitalWrite(PIN_ECU_OK, HIGH);
+  // digitalWrite(PIN_HV_READY, HIGH);
+
+  change_state(PRECHARGE_WAIT);
+
 }
 
 void prechargeWait(){
 
-  if (analogRead(PIN_SOC) > 500){
+  if (SOC > 500){
     // TODO: SOC needs ADC mapped
   }
 
