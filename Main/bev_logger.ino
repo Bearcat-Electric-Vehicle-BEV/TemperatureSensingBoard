@@ -43,7 +43,7 @@ void Bev_Logger::print(LogLevel level, const char *string) {
       }
     }
     if (log_mode & LOGGER_SD_MODE) {
-      if (!log_2_sd(buffer, "event.log")) {
+      if (!log_2_sd(buffer, "EVENT.log")) {
           // TODO: need something
       }
     }
@@ -55,9 +55,19 @@ void Bev_Logger::print(LogLevel level, const char *string) {
 
 void Bev_Logger::print(const CAN_message_t &msg) {
     
-    char buffer[100];
-    can_2_str(msg, buffer, 100);
-    print(INFO, buffer);
+    if (log_mode & LOGGER_DISPLAY_MODE) {
+      if (!log_2_display(msg)) {
+          // TODO: need something
+      }
+    }
+    if (log_mode & LOGGER_SD_MODE) {
+      if (!log_2_sd(msg, "CAN.log")) {
+          // TODO: need something
+      }
+    }
+    if (log_mode & LOGGER_SERIAL_MODE) {
+        Serial.println(msg);
+    }
 }
 
 bool log_2_display(const char* dataString) 
@@ -70,7 +80,20 @@ bool log_2_display(const char* dataString)
         return false;
     }
 
-    display_write(CAN_LOG_ADDR, dataString);
+    display_write(EVENT_LOG_ADDR, dataString);
+
+    return true;
+}
+
+bool log_2_display(const CAN_message_t &msg) 
+{
+    if (!check_display_online()) {
+        return false;
+    }
+
+    char buffer[100];
+    can_2_str(msg, buffer, 100);
+    display_write(CAN_LOG_ADDR, buffer);
 
     return true;
 }
@@ -80,15 +103,38 @@ bool log_2_sd(const char* dataString, const char* fname){
       return false;
 	}
 
-  if (dataString == NULL || fname == NULL) {
-    return false;
-  }
+    if (dataString == NULL || fname == NULL) {
+        return false;
+    }
 
 	// open the file
 	File dataFile = SD.open(fname, FILE_WRITE);
     // if the file is available, write to it:
     if (dataFile) {
       dataFile.println(dataString);
+      dataFile.close();
+    }
+    else {
+      return false;
+    }
+    // delay(100);
+
+	return true;
+}
+
+bool log_2_sd(const CAN_message_t &msg, const char* fname){
+	if (!SD.begin(BUILTIN_SDCARD)) {
+      return false;
+	}
+
+    char buffer[100];
+    can_2_str(msg, buffer, 100);
+
+	// open the file
+	File dataFile = SD.open(fname, FILE_WRITE);
+    // if the file is available, write to it:
+    if (dataFile) {
+      dataFile.println(buffer);
       dataFile.close();
     }
     else {

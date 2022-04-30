@@ -29,6 +29,7 @@
 #define MIN_I2C_ADDR 0x1
 #define UPDATE_DISPLAY_ADDR 0x40
 #define CAN_LOG_ADDR 0x41 
+#define EVENT_LOG_ADDR 0x42 
 #define MAX_I2C_ADDR 0x7F
 
 extern bool displayOnline;
