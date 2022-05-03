@@ -64,8 +64,23 @@ double startTime;
 double prechargeTime;
 bool timerStarted=false;
 
+// ETC related global var
 int ACCEL_MAXPOS = 1023;
 int ACCEL_MINPOS = 0;
+
+double accel_ped_1_pos;
+double accel_ped_2_pos;
+double accel_ped_pos; // This is the resultant value after verifying accel_1 and accel_2
+double curCurrentFromBattery; // This is DC, and it is the current being drawn by the battery. Get this value from CAN from the motor controller or  
+double batteryCurrentLimit; // This is the current maximum current that could be drawn from the battery. This varies based on the conditions of the battery
+
+// In Nm. The motor is rated for 120, but due to the uncertainty around battery capacity, we have capped the value to this value.
+// This value should be adjusted after physical testing
+double max_safe_torque = 80; 
+
+//y = -4570.8x6 + 14346x5 - 16327x4 + 7827.7x3 - 1323.3x2 + 127.54x - 0.3364
+double[] throttleSensitivityCurve = {-4570.8, 14346, -16327, 7827.7, -1323.3, 127.54, -0.3364}
+int throttleSensitivityCurve_N = 6
 
 //outgoing signal table true means it should be High false means it should be low
 
@@ -266,46 +281,37 @@ void prechargeWait(){
 }
 
 bool ETC() {
-  
-  // TODO: Initialise these variables outside function
-  double accel_val1 = analogRead(PIN_ACCEL_0);
-  double accel_val2 = analogRead(PIN_ACCEL_1);
-  double accel_val;
-  double brake_val = analogRead(PIN_BRAKE_POS);
-  
-  // Might want to change this since they would be under different voltages
-  if (accel_val1 != accel_val2) {
-    // Call error function
-    return false;
-  }
-
-  // Most likely we have to change this
-  // assume range is 0 - 1023 for now
-  accel_val = ((accel_val1 + accel_val2) / 2.0)/1023;
-
-  // temp, set accel_val to random
-  accel_val = random(1023);
-//  Serial.print("Accel random value = ");
-//  Serial.print(accel_val);
-//  Serial.print(" ");
-  
-  // TODO: Call CAN function to read current Torque and speed values from motor controller  
-  double currentTorque = 0;
-  double currentSpeed = random(100);
-
-//  Serial.print("Speed rand val = ");
-//  Serial.print(currentSpeed);
-//  Serial.print(" ");
+  initialiseProcessGlobalInputParameters();
   
   double targetTorqueValue = getTorqueValueFromCurve(accel_val, currentTorque, currentSpeed);
-
-  //Send new torque value to motor controller by setting this global variable, which is later sent to the MC via the heartbeat signal
-  TorqueCommand = targetTorqueValue;
-//  Serial.print("Target torque = ");
-//  Serial.println(TorqueCommand);
+  
+  writeETCGlobalValues(targetTorqueValue);
   
   return true;
   
+}
+
+// Uses Horner's method to evaluate polynomials in O(n)
+// https://www.geeksforgeeks.org/horners-method-polynomial-evaluation/
+double evaluatePolynomial(double poly[], int n, int x) {
+  double result = poly[0];
+  for (int i = 0; i < n; i++) {
+    result = result * x + poly[i];
+  }
+  return result;
+}
+
+// This function is responsible for initialising all the global input params by getting them from CAN, etc, and cleaning up the input values, such as scaling the accel pedal pos values to 0-1
+void initialiseProcessGlobalInputParameters() {
+  
+  accel_val1 = analogRead(PIN_ACCEL_0);
+  accel_val2 = analogRead(PIN_ACCEL_1);
+  brake_val = analogRead(PIN_BRAKE_POS);
+}
+
+// This function is called from the ETC function to safely write all the global variables that would be later written to code
+void writeETCGlobalValues(double targetTorqueValue) {
+
 }
 
 double min(double val1, double val2) {
@@ -318,25 +324,14 @@ double max(double val1, double val2) {
   else {return val2;}
 }
 
-// max torque = 120
-// min acc pos = 0
-// max acc pos = 1023
 
-// TODO: Figure out what sort of throttle response do we need, and modelling it with a polynormal curve
+// currentAccelPos = (0-1)
 double getTorqueValueFromCurve(double currentAccelPos, double currentTorque, double currentSpeed) {
-  
-  if(currentSpeed < 20.0) {
-    if(currentAccelPos > 0.0) {
-      return min((currentAccelPos+500 / ACCEL_MAXPOS) * 120.0, 120.0);
-    }
-  }
-  else if(currentSpeed < 70.0) {
-    return min((currentAccelPos / ACCEL_MAXPOS) * 120.0,120.0);
-  }
+  double finalTorque = 0;
+  double torque_from_pedal = evaluatePolynomial(throttleSensitivityCurve, throttleSensitivityCurve_N, currentAccelPos);
 
-  else {
-    return min((currentAccelPos / ACCEL_MAXPOS) * 70.0, 120.0);
-  }
+  finalTorque = torque_from_pedal;
+  return finalTorque;
 }
   
 void readyToGoWait(){
