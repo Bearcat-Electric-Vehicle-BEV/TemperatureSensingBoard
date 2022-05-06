@@ -4,7 +4,7 @@ bool displayOnline = true;
 
 void display_write(int addr, const char *string) {
     Wire.beginTransmission(addr);
-    Wire.write(string);
+    Wire.write(5);
     Wire.endTransmission();
 }
 
@@ -21,6 +21,9 @@ void update_display() {
  * https://github.com/Richard-Gemmell/teensy4_i2c/blob/master/examples/wire/find_slaves/find_slaves.ino
  */
 bool check_display_online(){
+
+    return true;
+  
     if (displayOnline) {
         Wire.beginTransmission(UPDATE_DISPLAY_ADDR);
         if (Wire.endTransmission() != 0) {

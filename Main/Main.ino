@@ -135,7 +135,7 @@ void setup() {
   // Configure CAN BUS 0 
   digitalWrite(PIN_CAN_TRANS_STDBY, LOW); /* optional tranceiver enable pin */
   Can0.begin();
-  Can0.setBaudRate(250000);
+  Can0.setBaudRate(500000);
   Can0.setMaxMB(16);
   Can0.enableFIFO();
   Can0.enableFIFOInterrupt();
@@ -164,7 +164,7 @@ void setup() {
   config.trigger = 5; /* in seconds, 0->128 */
   config.timeout = 10; /* in seconds, 0->128 */
   config.callback = watchdogCallback;
-  wdt.begin(config);
+//  wdt.begin(config);
 
 
 }
