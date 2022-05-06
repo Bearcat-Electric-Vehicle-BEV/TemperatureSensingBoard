@@ -2,6 +2,9 @@
 #define BEV_CAN_H
 
 #include <FlexCAN_T4.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
 
 /*
  * CAN Library Used
@@ -42,8 +45,28 @@
 #define RMS_PARAMETER_MSG2 0x0C2
 #define RMS_ADDR_HIGH 0x0C2
 
-unsigned ModuleATemperature;
-unsigned ModuleBTemperature;
+extern uint16_t ModuleATemperature, ModuleBTemperature, ModuleCTemperature, GateDriverBoardTemperature;
+extern uint16_t ControlBoardTemperature, RTD1Temperature, RTD2Temperature, RTD3Temperature;
+extern uint16_t RTD4Temperature, RTD5Temperature, MotorTemperature, TorqueShudder;
+extern uint16_t AnalogInput1, AnalogInput2, AnalogInput3, AnalogInput4;
+extern uint8_t DigitalInput1, DigitalInput2, DigitalInput3, DigitalInput4, DigitalInput5, DigitalInput6;
+extern uint16_t MotorAngle, MotorSpeed, ElectricalOutputFreq, DeltaResolver;
+extern uint16_t PhaseACurrent, PhaseBCurrent, PhaseCCurrent, DCBusCurrent;
+extern uint16_t DCBusVoltage, OutputVoltage, PhaseABVoltage, PhaseBCVoltage;
+extern uint16_t FluxCommand, FluxFeedback, idFeedback, iqFeedback;
+extern uint16_t ReferenceVoltage15, ReferenceVoltage25, ReferenceVoltage50, SystemVoltage12;
+extern uint16_t VSMState; extern uint8_t InverterState, RelayState, InverterRunMode, InverterCommandMode, InverterEnableState, InverterEnableLockout, DirectionCommand;
+extern uint16_t POSTFaultLo, POSTFaultHi, RunFaultLo, RunFaultHi;
+extern uint16_t CommandedTorque, TorqueFeedback; extern uint32_t PowerOnTimer;
+extern uint16_t ModulationIndex, FluxWeakeningOutput, IdCommand, IqCommand;
+extern uint16_t EEPROMVersion, SoftwareVersion, DataCode_mmdd, DataCode_yyyy;
+extern uint16_t gamma_resolver, gamm_observer, sin_corr;
+extern uint16_t cos_corr, la_corr, lb_corr;
+extern uint16_t lc_corr, vdc, iq_cmd;
+extern uint16_t id_cmd, modulation, flux_weak_out;
+extern uint16_t vq_cmd, vd_cmd, vqs_cmd;
+extern uint16_t voltage12_pwmfreq, run_faults_lo, run_faults_hi;
+
 
 /*
  * BMS Specific Addresses
@@ -57,54 +80,26 @@ unsigned ModuleBTemperature;
 #define BMS_MSG1 0x6B1
 #define BMS_FAULTS1 0x6B2
 #define BMS_FAULTS2 0x6B3
-#define BMS_ADDR_HIGH 0x6B3
+#define BMS_FAULTS3 0x6B4
+#define BMS_ADDR_HIGH 0x6B4
 
 // BMS Parameter Signals 
-extern unsigned SOC;
-extern unsigned DCL; 
-extern unsigned CCL; 
-extern unsigned InternalTemperature;
-extern unsigned HighestCellVoltage;
-extern unsigned PackCurrent;
-extern unsigned AverageTemperature;
-extern unsigned CheckSum;
+extern unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurrent, AverageTemperature, CheckSum;
 
 // BMS Fault Signals
-extern unsigned DischargeLimitEnforcementFault;
-extern unsigned ChargerSafteyRelayFault;
-extern unsigned InternalHardwareFault;
-extern unsigned InternalHeatsinkThermistorFault;
-extern unsigned InternalSoftwareFault;
-extern unsigned HighestCellVoltageTooHighFault;
-extern unsigned LowestCellVoltageTooLowFault;
-extern unsigned PackTooHotFault;
-extern unsigned DTCSTATUS_RESERVED; 
-
-extern unsigned InternalCommunicationFault;
-extern unsigned CellBalancingStuckOffFault;
-extern unsigned WeakCellFault;
-extern unsigned LowCellVoltageFault;
-extern unsigned OpenWiringFault;
-extern unsigned CurrentSensorFault;
-extern unsigned HighestCellVoltageOver5VFault;
-extern unsigned CellASICFault;
-extern unsigned WeakPackFault;
-extern unsigned FanMonitorFault;
-extern unsigned ThermistorFault;
-extern unsigned ExternalCommunicationFault;
-extern unsigned RedundantPowerSupplyFault;
-extern unsigned HighVoltageIsolationFault;
-extern unsigned InputPowerSupplyFault;
-extern unsigned ChargeLimitEnforcementFault;
+extern uint32_t bms_faults[3];
 
 extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 extern CAN_message_t cmdMsg;
 
+void dump_fault_codes();
+bool checkFaultCodes();
 void sendMessage(unsigned id, unsigned *buffer, unsigned len);
 void canSniff(const CAN_message_t &msg);
 void printCANMsg(const CAN_message_t &msg);
 void sendInverterEnable();
 void sendRMSHeartbeat();
+void can_2_str(const CAN_message_t &msg, char *buffer, size_t len);
 
 
 #endif // BEV_CAN_H

@@ -2,6 +2,9 @@
 #define BEV_I2C_H
 
 #include <i2c_device.h>
+#include <i2c_driver.h>
+#include <i2c_driver_wire.h>
+
 
 /*
  * I2C Library Used
@@ -24,14 +27,15 @@
  */
 
 #define MIN_I2C_ADDR 0x1
-#define DISPLAY_I2C_ADDR 0x40
+#define UPDATE_DISPLAY_ADDR 0x40
+#define CAN_LOG_ADDR 0x41 
+#define EVENT_LOG_ADDR 0x42 
 #define MAX_I2C_ADDR 0x7F
 
-bool displayUpdateParam(uint16_t param_macro, uint16_t param_val);
-void displayRead();
-void displayWrite(uint16_t val);
-void displayReceiveEvent();
-void displayRequestEvent();
-void find_address();
+extern bool displayOnline;
+
+void display_write(int addr, const char *string);
+void updateDisplay();
+bool check_display_online();
 
 #endif // BEV_I2C_H

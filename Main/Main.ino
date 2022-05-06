@@ -22,11 +22,12 @@
  *
  */
 
-#include <i2c_driver.h>
-#include <i2c_driver_wire.h>
 #include "include/bev_i2c.h"
 #include "include/bev_can.h"
-#include "include/bev_sd.h"
+#include "include/bev_logger.h"
+#include "include/bev_etc.h"
+
+#include "Watchdog_t4.h"
 
 #define PIN_VEHICLE_PWR 2
 #define PIN_Brake_Light 5
@@ -49,16 +50,26 @@
 /* State Machine Diagram https://drive.google.com/file/d/1_kZ9mo7b1bYq2sO-uvetE1C0Gtml-KTl/view?usp=sharing
  * Original documentation on the states can be found at https://xiahualiu.github.io/posts/bev-tasks/
  */
-enum ECUState {
-   INIT, RESET, RESET_CONFIRM, ERROR_STATE, ROUTINE_CHECK, PRE_HV_CHECK, 
-   HV_READY_WAIT, PRECHARGE_WAIT, READY_TO_GO_WAIT};
 
-ECUState currentState;
+#define FOREACH_STATE(STATE) \
+        STATE(INIT)   \
+        STATE(RESET)  \
+        STATE(RESET_CONFIRM)   \
+        STATE(ERROR_STATE)  \
+        STATE(ROUTINE_CHECK)  \
+        STATE(PRE_HV_CHECK)  \
+        STATE(HV_READY_WAIT)  \
+        STATE(PRECHARGE_WAIT)  \
+        STATE(READY_TO_GO_WAIT)  \
 
-IntervalTimer Heartbeat;
+enum ECUState{
+    FOREACH_STATE(GENERATE_ENUM)
+};
 
-// TODO: Marshal (2/14/22) Implement watchdog 
-// TODO: Marshal (2/14/22) Need to have a logging and error handling system, example (status/return codes)
+static const char *STATE_STRING[] = {
+    FOREACH_STATE(GENERATE_STRING)
+};
+
 double val;
 double startTime;
 double prechargeTime;
@@ -90,16 +101,19 @@ int currentDeltaNFCurve_N = 4;
 double RPMNegativeFeedbackCurve[] = {-2E-15, -5E-11, 6E-7, -0.0041, 15.713, -32245, 3E7};
 int RPMCurve_N = 6;
 
-//outgoing signal table true means it should be High false means it should be low
+ECUState currentState;
+IntervalTimer Heartbeat;
+
+// https://github.com/tonton81/WDT_T4
+WDT_T4<WDT1> wdt;
 
 // RMS Command Parameters 
-int TorqueCommand = 500;
-int SpeedCommand = 500;
-int Direction = 1;
-int InverterEnabled = 1;
+int TorqueCommand = 0;
+int SpeedCommand = 0;
+int Direction = 0;
+int InverterEnabled = 0;
 int Duration = 0;
 
-// TODO: move to a display file
 // Display Parameters
 int Speed = 0;
 int Battery_Temp = 0;
@@ -107,10 +121,21 @@ int Battery_Life = 0;
 int Range_KM = 0;
 int Range_Mins = 0;
 
+void change_state(ECUState newState) {
+    currentState = newState;
+    char buffer[100];
+    snprintf(buffer, 100, "ENTERED %s state", STATE_STRING[newState]);
+    Log.info(buffer);
+}
+
+void watchdogCallback() {
+  Log.critical("Watchdog timer not reset!!! Resetting ECU!!!");
+}
+
 void setup() {
  
   Serial.begin(115200); delay(400);
-  currentState = INIT;
+  change_state(INIT);
 
   // Set Pin Modes
   pinMode(PIN_VEHICLE_PWR, INPUT);
@@ -131,13 +156,14 @@ void setup() {
   pinMode(PIN_SPEAKER, OUTPUT);
   pinMode(PIN_RESET, INPUT);
  
-  // Teensy I2C Slave Code
-//  Wire.begin(0x40);
-//  Wire.onRequest(displayRequestEvent);
-//  Wire.onReceive(displayReceiveEvent);
+  // Teensy I2C Master Code
+  Wire.begin();
+
+  if (!check_display_online()) {
+    Log.error("Display not online");
+  }
 
   // Configure CAN BUS 0 
-  Serial.begin(115200); delay(400);
   digitalWrite(PIN_CAN_TRANS_STDBY, LOW); /* optional tranceiver enable pin */
   Can0.begin();
   Can0.setBaudRate(250000);
@@ -147,8 +173,8 @@ void setup() {
   Can0.onReceive(canSniff);
   Can0.mailboxStatus();
   
-//  Can0.enableMBInterrupts(); // enables all mailboxes to be interrupt enabled
-//  Can0.mailboxStatus();
+  Can0.enableMBInterrupts(); // enables all mailboxes to be interrupt enabled
+  Can0.mailboxStatus();
 
   // RMS CAN RX Mailbox
 //   Can0.setMBFilter(MB6, 0x123);
@@ -158,11 +184,19 @@ void setup() {
 //  Can0.setMBFilter(MB9, 0x0C0);
 //  Can0.setMB(MB9,TX); // Set mailbox as transmit
 
- sendInverterEnable();
+  sendInverterEnable();
 
-  // RMS Command Message Heartbeat
- Heartbeat.priority(128);
- Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
+  // PM100Dx Command Message Heartbeat
+  Heartbeat.priority(128);
+  Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
+
+  // Initialize the watchdog timer
+  WDT_timings_t config;
+  config.trigger = 5; /* in seconds, 0->128 */
+  config.timeout = 10; /* in seconds, 0->128 */
+  config.callback = watchdogCallback;
+  wdt.begin(config);
+
 
 }
 
@@ -172,13 +206,39 @@ void loop() {
    * Function corresponding to state is called inside conditional. Boolean 
    * value determines if machine needs to switch states.
    */
-   
-    Can0.events();
-    ETC();
-    
+
+  // Watchdog reset
+  wdt.feed();
+
+  Can0.events();
+
+  if(checkFaultCodes()) {
+      dump_fault_codes();
+  }
+
+  int pedal_0 = analogRead(PIN_ACCEL_0);
+  int pedal_1 = analogRead(PIN_ACCEL_1); 
+
+  char buffer[100];
+  snprintf(buffer, 100, "Pedal Pos 0:%d Pedal Pos 1:%d", 
+            pedal_0, pedal_1);
+
+  Log.info(buffer);
+
+  // if (!validate_pedals(pedal_0, pedal_1)) {
+  //     Log.critical("Pedal positions not within 10%!!!!"); 
+  //     change_state(ERROR_STATE);
+  //     return;
+  // }
+
+  // if (!validate_current_drawn()) {
+  //     Log.critical("Current drawn is over current limit!!!");
+  //     change_state(ERROR_STATE);
+  //     return;
+  // } 
+
   return;
-
-
+  
   switch(currentState){
     case INIT:
       carInit();
@@ -216,8 +276,11 @@ void loop() {
       readyToGoWait();
       break;
       
-    default: // TODO: error if we are here
-      Serial.println("Error: in unknown state");
+    default:
+      char buffer[100];
+      snprintf(buffer, 100, "IN UNKNOWN STATE:%d", currentState);
+      Log.critical(buffer);
+      change_state(ERROR_STATE);
       break;
  }
 }
@@ -225,67 +288,75 @@ void loop() {
 void carInit(){
   // Initialization done in setup(), function here for completeness
   digitalWrite(PIN_ECU_OK, LOW);
-  
-  // TODO: determine if busy waiting is the best strategy
-//  while (digitalRead(PRECHARGE_FINISHED) != HIGH);
-
-  currentState = RESET;
-
-//  return true;
+  change_state(RESET);
 }
 
 void carReset(){
+  // TODO (Marsh May 2022): what memory needs reset?
+
   digitalWrite(PIN_ECU_OK, LOW);
-  // digitalRead(PIN_PRECHARGE_FINISHED);
-  // TODO: Marshal (2/14/22) Reset memory when memory is implemented
+  
+  if (digitalRead(PIN_PRECHARGE_FINISHED) == HIGH) {
+      change_state(PRE_HV_CHECK);
+  } 
+  else {
+    // If Failed to RESET
+    change_state(ERROR_STATE);
+  }
 
-  // Passed reset
-  currentState = HV_READY_WAIT;
-
-  // If Failed to RESET
-  // currentState = ERROR_STATE;
-
-//  return true;
 }
 
 void resetConfirm(){
-//  return false;
+  // TODO (marsh May 2022): is this state necessary?
+
 }
   
 void error(){
-  // TODO: Should turn off Heartbeat and events timers when we are in a fault state
-  
-  digitalWrite(PIN_ECU_OK, LOW);
 
-//  return false;
+    Log.critical("Entered ERROR STATE!!!");
+    digitalWrite(PIN_ECU_OK, LOW);
+
+    // Inverter enable sends a 0 torque command to stop motor
+    sendInverterEnable(); // todo: make a disable command
+    Heartbeat.end();
+
+    // TODO: prepare for shutdown or something? 
+
 }
 
 void routineCheck(){
-//  return true;
 }
 
 void preHVCheck(){
   // TODO: add checks
 
-//  return true;
+  // Check BMS values make sense
+
+  // Check that motor controller make sense
+
+  // Check that display is online
+
+  // check can-bus is online
+
+
 }
 
 void HVReadyWait(){
-//  digitalWrite(PIN_ECU_OK, HIGH);
-//  digitalWrite(PIN_HV_READY, HIGH);
-//  return true;
+  digitalWrite(PIN_ECU_OK, HIGH);
+  // digitalWrite(PIN_HV_READY, HIGH);
+
+  change_state(PRECHARGE_WAIT);
+
 }
 
 void prechargeWait(){
 
-  if (analogRead(PIN_SOC) > 500){
+  if (SOC > 500){
     // TODO: SOC needs ADC mapped
   }
 
   // if passed precharge wait
-  currentState = READY_TO_GO_WAIT;
-
-//  return false;
+  change_state(READY_TO_GO_WAIT);
 }
 
 bool ETC() {
