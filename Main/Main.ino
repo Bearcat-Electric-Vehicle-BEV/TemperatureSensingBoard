@@ -71,6 +71,7 @@ int ACCEL_MINPOS = 0;
 double accel_ped_1_pos;
 double accel_ped_2_pos;
 double accel_ped_pos; // This is the resultant value after verifying accel_1 and accel_2
+double brake_val;
 double curCurrentFromBattery; // This is DC, and it is the current being drawn by the battery. Get this value from CAN from the motor controller or  
 double batteryCurrentLimit; // This is the current maximum current that could be drawn from the battery. This varies based on the conditions of the battery
 
@@ -79,8 +80,15 @@ double batteryCurrentLimit; // This is the current maximum current that could be
 double max_safe_torque = 80; 
 
 //y = -4570.8x6 + 14346x5 - 16327x4 + 7827.7x3 - 1323.3x2 + 127.54x - 0.3364
-double[] throttleSensitivityCurve = {-4570.8, 14346, -16327, 7827.7, -1323.3, 127.54, -0.3364}
-int throttleSensitivityCurve_N = 6
+double throttleSensitivityCurve[] = {-4570.8, 14346, -16327, 7827.7, -1323.3, 127.54, -0.3364};
+int throttleSensitivityCurve_N = 6;
+
+// y = -8E-07x4 + 8E-05x4 - 0.0019x2 - 0.0191x + 1.0115
+double currentDeltaNFCurve[] = {-0.0000008, 0.00008, -0.0019, -0.0191, 1.0115};
+int currentDeltaNFCurve_N = 4;
+
+double RPMNegativeFeedbackCurve[] = {-2E-15, -5E-11, 6E-7, -0.0041, 15.713, -32245, 3E7};
+int RPMCurve_N = 6;
 
 //outgoing signal table true means it should be High false means it should be low
 
@@ -283,9 +291,23 @@ void prechargeWait(){
 bool ETC() {
   initialiseProcessGlobalInputParameters();
   
-  double targetTorqueValue = getTorqueValueFromCurve(accel_val, currentTorque, currentSpeed);
+  double torque_from_pedal = evaluatePolynomial(throttleSensitivityCurve, throttleSensitivityCurve_N, accel_ped_pos);
+
+  double deltaCurrent = 50; // temp, replace this with max limit - current current
+  double currentDelta_NF = evaluatePolynomial(currentDeltaNFCurve, currentDeltaNFCurve_N, deltaCurrent);
+
+  double rpm = 3000; // Replace this with actual rpm
+  double rpm_NF = evaluatePolynomial(RPMNegativeFeedbackCurve, RPMCurve_N, rpm);
+
+  double NF_weight = 1;
+  if(rpm_NF > currentDelta_NF) {
+    NF_weight = rpm_NF;
+  }
+  else {
+    NF_weight = currentDelta_NF;
+  }
   
-  writeETCGlobalValues(targetTorqueValue);
+  writeETCGlobalValues(torque_from_pedal * NF_weight);
   
   return true;
   
@@ -304,9 +326,12 @@ double evaluatePolynomial(double poly[], int n, int x) {
 // This function is responsible for initialising all the global input params by getting them from CAN, etc, and cleaning up the input values, such as scaling the accel pedal pos values to 0-1
 void initialiseProcessGlobalInputParameters() {
   
-  accel_val1 = analogRead(PIN_ACCEL_0);
-  accel_val2 = analogRead(PIN_ACCEL_1);
+  accel_ped_1_pos = analogRead(PIN_ACCEL_0);
+  accel_ped_2_pos = analogRead(PIN_ACCEL_1);
   brake_val = analogRead(PIN_BRAKE_POS);
+  
+  // temp, should do additional processing
+  accel_ped_pos = accel_ped_1_pos/ACCEL_MAXPOS;
 }
 
 // This function is called from the ETC function to safely write all the global variables that would be later written to code
@@ -322,16 +347,6 @@ double min(double val1, double val2) {
 double max(double val1, double val2) {
   if(val1 >= val2) {return val1;}
   else {return val2;}
-}
-
-
-// currentAccelPos = (0-1)
-double getTorqueValueFromCurve(double currentAccelPos, double currentTorque, double currentSpeed) {
-  double finalTorque = 0;
-  double torque_from_pedal = evaluatePolynomial(throttleSensitivityCurve, throttleSensitivityCurve_N, currentAccelPos);
-
-  finalTorque = torque_from_pedal;
-  return finalTorque;
 }
   
 void readyToGoWait(){
