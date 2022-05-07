@@ -79,26 +79,25 @@ bool timerStarted=false;
 int ACCEL_MAXPOS = 1023;
 int ACCEL_MINPOS = 0;
 
-double accel_ped_1_pos;
-double accel_ped_2_pos;
+int accel_ped_1_pos;
+int accel_ped_2_pos;
 double accel_ped_pos; // This is the resultant value after verifying accel_1 and accel_2
 double brake_val;
-double curCurrentFromBattery; // This is DC, and it is the current being drawn by the battery. Get this value from CAN from the motor controller or  
-double batteryCurrentLimit; // This is the current maximum current that could be drawn from the battery. This varies based on the conditions of the battery
+double deltaCurrent; // This is max DC current limit - current current
 
-// In Nm. The motor is rated for 120, but due to the uncertainty around battery capacity, we have capped the value to this value.
+// In Nm. The motor is rated for 102Nm, but due to the uncertainty around battery capacity, we have capped the value to this value.
 // This value should be adjusted after physical testing
 double max_safe_torque = 80; 
 
 //y = -4570.8x6 + 14346x5 - 16327x4 + 7827.7x3 - 1323.3x2 + 127.54x - 0.3364
 double throttleSensitivityCurve[] = {-4570.8, 14346, -16327, 7827.7, -1323.3, 127.54, -0.3364};
-int throttleSensitivityCurve_N = 6;
+int throttleSensitivityCurve_N = 7;
 
 // y = -8E-07x4 + 8E-05x4 - 0.0019x2 - 0.0191x + 1.0115
-double currentDeltaNFCurve[] = {-0.0000008, 0.00008, -0.0019, -0.0191, 1.0115};
-int currentDeltaNFCurve_N = 4;
+double currentDeltaNFCurve[] = {-8E-7, 8E-5, -0.0019, -0.0191, 1.0115};
+int currentDeltaNFCurve_N = 5;
 
-double RPMNegativeFeedbackCurve[] = {-2E-15, -5E-11, 6E-7, -0.0041, 15.713, -32245, 3E7};
+double RPMNegativeFeedbackCurve[] = {9E-13, -2E-8, 0.0003, -1.3643, 3584.1, -4E6};
 int RPMCurve_N = 6;
 
 ECUState currentState;
@@ -171,10 +170,10 @@ void setup() {
   Can0.enableFIFO();
   Can0.enableFIFOInterrupt();
   Can0.onReceive(canSniff);
-  Can0.mailboxStatus();
+  // Can0.mailboxStatus();
   
-  Can0.enableMBInterrupts(); // enables all mailboxes to be interrupt enabled
-  Can0.mailboxStatus();
+  // Can0.enableMBInterrupts(); // enables all mailboxes to be interrupt enabled
+  // Can0.mailboxStatus();
 
   // RMS CAN RX Mailbox
 //   Can0.setMBFilter(MB6, 0x123);
@@ -184,11 +183,11 @@ void setup() {
 //  Can0.setMBFilter(MB9, 0x0C0);
 //  Can0.setMB(MB9,TX); // Set mailbox as transmit
 
-  sendInverterEnable();
+ // sendInverterEnable();
 
   // PM100Dx Command Message Heartbeat
-  Heartbeat.priority(128);
-  Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
+  // Heartbeat.priority(128);
+  // Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
 
   // Initialize the watchdog timer
   WDT_timings_t config;
@@ -208,22 +207,34 @@ void loop() {
    */
 
   // Watchdog reset
-  wdt.feed();
+  // wdt.feed();
 
-  Can0.events();
+  // Can0.events();
 
-  if(checkFaultCodes()) {
-      dump_fault_codes();
+//  if(checkFaultCodes()) {
+//      dump_fault_codes();
+//  }
+
+//
+//  char buffer[100];
+//  snprintf(buffer, 100, "Pedal Pos 0:%d Pedal Pos 1:%d", 
+//            pedal_0, pedal_1);
+//
+//  Log.info(buffer);
+
+  simulateETCInputs(); // only for testing. Comment out if connected to motor controller
+  if(!ETC()) {
+    Serial.println("Something went wrong with ETC");
   }
 
-  int pedal_0 = analogRead(PIN_ACCEL_0);
-  int pedal_1 = analogRead(PIN_ACCEL_1); 
-
-  char buffer[100];
-  snprintf(buffer, 100, "Pedal Pos 0:%d Pedal Pos 1:%d", 
-            pedal_0, pedal_1);
-
-  Log.info(buffer);
+// Debug code to test rpm negative feedback curve
+//  double temp_motorrpm = (min(1.0 - (analogRead(PIN_ACCEL_0)-808)/116.0, 1.0)) * 500 + 5000;
+//  Serial.print(temp_motorrpm);
+//  Serial.print(": ");
+//  double rpm_NF = evaluatePolynomial(RPMNegativeFeedbackCurve, RPMCurve_N, temp_motorrpm);
+//  Serial.println(rpm_NF);
+  
+  delay(1000);
 
   // if (!validate_pedals(pedal_0, pedal_1)) {
   //     Log.critical("Pedal positions not within 10%!!!!"); 
@@ -359,55 +370,96 @@ void prechargeWait(){
   change_state(READY_TO_GO_WAIT);
 }
 
-bool ETC() {
-  initialiseProcessGlobalInputParameters();
-  
-  double torque_from_pedal = evaluatePolynomial(throttleSensitivityCurve, throttleSensitivityCurve_N, accel_ped_pos);
-
-  double deltaCurrent = 50; // temp, replace this with max limit - current current
-  double currentDelta_NF = evaluatePolynomial(currentDeltaNFCurve, currentDeltaNFCurve_N, deltaCurrent);
-
-  double rpm = 3000; // Replace this with actual rpm
-  double rpm_NF = evaluatePolynomial(RPMNegativeFeedbackCurve, RPMCurve_N, rpm);
-
-  double NF_weight = 1;
-  if(rpm_NF > currentDelta_NF) {
-    NF_weight = rpm_NF;
-  }
-  else {
-    NF_weight = currentDelta_NF;
-  }
-  
-  writeETCGlobalValues(torque_from_pedal * NF_weight);
-  
-  return true;
-  
+// function for testing ETC, by setting specific input values
+void simulateETCInputs() {
+  DCL = 200;
+  PackCurrent = 100;
+  MotorSpeed = 5200;
 }
 
-// Uses Horner's method to evaluate polynomials in O(n)
-// https://www.geeksforgeeks.org/horners-method-polynomial-evaluation/
-double evaluatePolynomial(double poly[], int n, int x) {
-  double result = poly[0];
-  for (int i = 0; i < n; i++) {
-    result = result * x + poly[i];
-  }
-  return result;
-}
-
-// This function is responsible for initialising all the global input params by getting them from CAN, etc, and cleaning up the input values, such as scaling the accel pedal pos values to 0-1
-void initialiseProcessGlobalInputParameters() {
+// This function is responsible for processing input params for ETC
+void processInputParameters() {
   
   accel_ped_1_pos = analogRead(PIN_ACCEL_0);
   accel_ped_2_pos = analogRead(PIN_ACCEL_1);
   brake_val = analogRead(PIN_BRAKE_POS);
   
   // temp, should do additional processing
-  accel_ped_pos = accel_ped_1_pos/ACCEL_MAXPOS;
+  // It should be investigates as to why the pedal values only go from 924 and 808
+  accel_ped_pos = min(1.0 - (accel_ped_1_pos-808)/116.0, 1.0);
+ 
+  deltaCurrent = DCL - PackCurrent; // DCL and PackCurrent are values received from the BMS via CAN
 }
 
-// This function is called from the ETC function to safely write all the global variables that would be later written to code
-void writeETCGlobalValues(double targetTorqueValue) {
+bool ETC() {
+  processInputParameters();
+  
+  double torque_from_pedal = capBetweenRange(evaluatePolynomial(throttleSensitivityCurve, throttleSensitivityCurve_N, accel_ped_pos), 0, max_safe_torque);
 
+  double currentDelta_NF = capBetweenZeroToOne(evaluatePolynomial(currentDeltaNFCurve, currentDeltaNFCurve_N, deltaCurrent));
+  double rpm_NF = capBetweenZeroToOne(evaluatePolynomial(RPMNegativeFeedbackCurve, RPMCurve_N, (double)MotorSpeed));
+
+  double nf_weights[] = {currentDelta_NF, rpm_NF};
+  double NF_weight = getMax(nf_weights);
+
+  // This is the global parameter that whose value gets sent to the motor controller via CAN
+  double finalTorque = (1.0-NF_weight) * torque_from_pedal;
+  
+  TorqueCommand = (int)finalTorque; // This is the variable whose value gets sent to the MC
+
+  String outputString = String(accel_ped_1_pos) + " " + String(accel_ped_pos) + " " + String(deltaCurrent) + " " + String(MotorSpeed) + " " + String(torque_from_pedal) + " " + String(currentDelta_NF) + " " + String(rpm_NF) + " " + String(NF_weight) + " " + String(finalTorque);
+  Serial.println(outputString);
+  
+  return true;
+}
+
+// Uses Horner's method to evaluate polynomials in O(n)
+// https://www.geeksforgeeks.org/horners-method-polynomial-evaluation/
+double evaluatePolynomial(double poly[], int n, double x) {
+  double result = poly[0];
+  for (int i = 1; i < n; i++) {
+    result = result * x + poly[i];
+  }
+  return result;
+}
+
+// Function created for sanity check/debug purposes. The above function is more efficient
+double evaluatePolynomial2(double poly[], int n, double x) {
+  double result = poly[n-1];
+  double xPow = x;
+
+  for (int i = 1; i < n; i++) {
+    result += (poly[n-i-1] * xPow);
+    xPow *= x;
+  }
+  return result;
+}
+
+
+double getMax(double values[]) {
+  int n = sizeof(values)/sizeof(values[0]);
+  double largest = values[0];
+  for(int i = 1;i < n; i++) {
+    if(values[i] > largest) {
+      largest = values[i];
+    }
+  }
+}
+
+double capBetweenZeroToOne(double value) {
+    capBetweenRange(value, 0.0, 1.0);
+}
+
+double capBetweenRange(double value, double lb, double ub) {
+  if(value > ub) {
+    return ub;  
+  }
+  else if (value < lb) {
+    return lb;
+  }
+  else {
+    return value;
+  }
 }
 
 double min(double val1, double val2) {
