@@ -2,7 +2,7 @@
 
 // https://github.com/thijse/Arduino-Log
 
-Bev_Logger Log((uint8_t)(LOGGER_DISPLAY_MODE|LOGGER_SD_MODE|LOGGER_SERIAL_MODE));
+Bev_Logger Log((uint8_t)(LOGGER_DISPLAY_MODE|LOGGER_SERIAL_MODE));
 
 Bev_Logger::Bev_Logger(uint8_t _log_mode) : log_mode(_log_mode)  { }
 
@@ -66,7 +66,9 @@ void Bev_Logger::print(const CAN_message_t &msg) {
       }
     }
     if (log_mode & LOGGER_SERIAL_MODE) {
-        Serial.println(msg);
+        char buffer[100];
+        can_2_str(msg, buffer, 100);
+        Serial.println(buffer);
     }
 }
 
