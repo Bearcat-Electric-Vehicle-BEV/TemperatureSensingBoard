@@ -1,5 +1,5 @@
-#include "include/bev_can.h"
-#include "include/bev_logger.h"
+#include "bev_can.h"
+#include "bev_logger.h"
 
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 CAN_message_t cmdMsg;

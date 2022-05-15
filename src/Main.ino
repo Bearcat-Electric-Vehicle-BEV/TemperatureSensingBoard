@@ -22,10 +22,10 @@
  *
  */
 
-#include "include/bev_i2c.h"
-#include "include/bev_can.h"
-#include "include/bev_logger.h"
-#include "include/bev_etc.h"
+#include "bev_i2c.h"
+#include "bev_can.h"
+#include "bev_logger.h"
+#include "bev_etc.h"
 
 #include "Watchdog_t4.h"
 

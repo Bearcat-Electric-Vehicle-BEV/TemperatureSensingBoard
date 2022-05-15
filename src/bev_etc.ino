@@ -1,5 +1,5 @@
-#include "include/bev_etc.h"
-#include "include/bev_can.h"
+#include "bev_etc.h"
+#include "bev_can.h"
 
 bool enable_motor() {
   send_clear_faults();

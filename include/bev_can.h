@@ -94,11 +94,9 @@ extern CAN_message_t cmdMsg;
 
 void dump_fault_codes();
 bool checkFaultCodes();
-void send_clear_faults();
 void sendMessage(unsigned id, unsigned *buffer, unsigned len);
 void canSniff(const CAN_message_t &msg);
 void printCANMsg(const CAN_message_t &msg);
-void sendInverterDisable();
 void sendInverterEnable();
 void sendRMSHeartbeat();
 void can_2_str(const CAN_message_t &msg, char *buffer, size_t len);
