@@ -2,7 +2,7 @@
 
 // https://github.com/thijse/Arduino-Log
 
-Bev_Logger Log((uint8_t)(LOGGER_DISPLAY_MODE|LOGGER_SERIAL_MODE));
+Bev_Logger Log((uint8_t)(LOGGER_SERIAL_MODE));
 
 Bev_Logger::Bev_Logger(uint8_t _log_mode) : log_mode(_log_mode)  { }
 
@@ -89,9 +89,9 @@ bool log_2_display(const char* dataString)
 
 bool log_2_display(const CAN_message_t &msg) 
 {
-    if (!check_display_online()) {
-        return false;
-    }
+//    if (!check_display_online()) {
+//        return false;
+//    }
 
     char buffer[100];
     can_2_str(msg, buffer, 100);
