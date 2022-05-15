@@ -30,6 +30,13 @@ uint8_t Diagnostic_Index, Diagnostic_SubIndex, Record_0, Record_1, Record_2, Rec
 unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurrent, AverageTemperature, CheckSum;
 uint32_t bms_faults[3];
 
+// RMS Command Parameters 
+int TorqueCommand = 0;
+int SpeedCommand = 0;
+int Direction = 1;
+int InverterEnabled = 0;
+int Duration = 0;
+
 bool checkFaultCodes() {
 
     // Motor Controller 

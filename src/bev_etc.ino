@@ -9,7 +9,7 @@ bool enable_motor() {
 	return true;
 }
 
-bool apply_pedals(unsigned pedal_0) {
+bool apply_pedals(int pedal_0) {
 
   int flip_thing = 937 - pedal_0;
   

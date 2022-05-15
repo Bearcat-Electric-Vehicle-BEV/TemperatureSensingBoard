@@ -1,4 +1,6 @@
 #include "bev_logger.h"
+#include "bev_can.h"
+#include "bev_i2c.h"
 
 // https://github.com/thijse/Arduino-Log
 

@@ -1,4 +1,5 @@
 #include "bev_i2c.h"
+#include "bev_can.h"
 
 bool displayOnline = true;
 

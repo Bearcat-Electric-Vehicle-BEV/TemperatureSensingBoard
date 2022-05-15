@@ -4,6 +4,8 @@
 #include <SPI.h>
 #include <SD.h>
 
+#include "bev_can.h"
+
 #define LOGGER_DISPLAY_MODE 1
 #define LOGGER_SD_MODE 2
 #define LOGGER_SERIAL_MODE 4

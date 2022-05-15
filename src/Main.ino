@@ -78,12 +78,7 @@ IntervalTimer Heartbeat;
 // https://github.com/tonton81/WDT_T4
 // WDT_T4<WDT1> wdt;
 
-// RMS Command Parameters 
-int TorqueCommand = 0;
-int SpeedCommand = 0;
-int Direction = 1;
-int InverterEnabled = 0;
-int Duration = 0;
+
 
 void change_state(ECUState newState) {
     currentState = newState;
