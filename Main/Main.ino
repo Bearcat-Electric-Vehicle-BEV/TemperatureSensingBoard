@@ -71,24 +71,19 @@ static const char *STATE_STRING[] = {
 };
 
 ECUState currentState;
+
 IntervalTimer Heartbeat;
+//IntervalTimer UpdateDisplay;
 
 // https://github.com/tonton81/WDT_T4
-WDT_T4<WDT1> wdt;
+// WDT_T4<WDT1> wdt;
 
 // RMS Command Parameters 
 int TorqueCommand = 0;
 int SpeedCommand = 0;
-int Direction = 0;
+int Direction = 1;
 int InverterEnabled = 0;
 int Duration = 0;
-
-// Display Parameters
-int Speed = 0;
-int Battery_Temp = 0;
-int Battery_Life = 0;
-int Range_KM = 0;
-int Range_Mins = 0;
 
 void change_state(ECUState newState) {
     currentState = newState;
@@ -124,48 +119,47 @@ void setup() {
   pinMode(PIN_SOC, INPUT);
   pinMode(PIN_SPEAKER, OUTPUT);
   pinMode(PIN_RESET, INPUT);
+
+  
  
   // Teensy I2C Master Code
-  Wire.begin();
+//  Wire.begin();
 
-  if (!check_display_online()) {
-    Log.error("Display not online");
-  }
+//  if (!check_display_online()) {
+//    Serial.println("Display not online");
+//  }
 
   // Configure CAN BUS 0 
-  digitalWrite(PIN_CAN_TRANS_STDBY, LOW); /* optional tranceiver enable pin */
-  Can0.begin();
-  Can0.setBaudRate(500000);
-  Can0.setMaxMB(16);
-  Can0.enableFIFO();
-  Can0.enableFIFOInterrupt();
-  Can0.onReceive(canSniff);
-  Can0.mailboxStatus();
+  digitalWrite(PIN_CAN_TRANS_STDBY, LOW); /* tranceiver enable pin */
   
-  Can0.enableMBInterrupts(); // enables all mailboxes to be interrupt enabled
+  Can0.begin();
+  Can0.setBaudRate(250000);
+  Can0.setMaxMB(16);
+  Can0.setMB(MB0,RX,STD);
+  Can0.setMBFilter(REJECT_ALL);
+  Can0.enableMBInterrupts();
+  Can0.onReceive(canSniff);
+//  Can0.setMBFilter(MB0, RMS_MOTOR_POSITION_INFO);
+//  Can0.setMBUserFilter(MB0,RMS_MOTOR_POSITION_INFO,RMS_MOTOR_POSITION_INFO);
   Can0.mailboxStatus();
-
-  // RMS CAN RX Mailbox
-//   Can0.setMBFilter(MB6, 0x123);
-//   Can0.setMB(MB6,RX,STD); // Set mailbox as receiving standard frames.
-
-  // RMS CAN TX Mailbox
-//  Can0.setMBFilter(MB9, 0x0C0);
-//  Can0.setMB(MB9,TX); // Set mailbox as transmit
-
-  sendInverterEnable();
 
   // PM100Dx Command Message Heartbeat
   Heartbeat.priority(128);
   Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
+  // UpdateDisplay.begin(update_display, 1000000);
 
   // Initialize the watchdog timer
-  WDT_timings_t config;
-  config.trigger = 5; /* in seconds, 0->128 */
-  config.timeout = 10; /* in seconds, 0->128 */
-  config.callback = watchdogCallback;
-//  wdt.begin(config);
+  // WDT_timings_t config;
+  // config.trigger = 5; /* in seconds, 0->128 */
+  // config.timeout = 10; /* in seconds, 0->128 */
+  // config.callback = watchdogCallback;
+  // wdt.begin(config);
 
+  if (!enable_motor()) {
+      sendInverterDisable();
+      Log.critical("Unable to enable motor!!!"); 
+      change_state(ERROR_STATE);
+  }
 
 }
 
@@ -175,9 +169,9 @@ void loop() {
    * Function corresponding to state is called inside conditional. Boolean 
    * value determines if machine needs to switch states.
    */
-
+  
   // Watchdog reset
-  wdt.feed();
+  // wdt.feed();
 
   Can0.events();
 
@@ -186,25 +180,26 @@ void loop() {
   }
 
   int pedal_0 = analogRead(PIN_ACCEL_0);
-  int pedal_1 = analogRead(PIN_ACCEL_1); 
+  int pedal_1 = analogRead(PIN_ACCEL_1);
 
-  char buffer[100];
-  snprintf(buffer, 100, "Pedal Pos 0:%d Pedal Pos 1:%d", 
-            pedal_0, pedal_1);
+  if (!validate_pedals(pedal_0, pedal_1)) {
+      sendInverterDisable();
+      Log.critical("Pedal positions not within 10%!!!!"); 
+      change_state(ERROR_STATE);
+      return;
+  }
+  
+  apply_pedals(pedal_0);
 
-  Log.info(buffer);
-
-  // if (!validate_pedals(pedal_0, pedal_1)) {
-  //     Log.critical("Pedal positions not within 10%!!!!"); 
-  //     change_state(ERROR_STATE);
-  //     return;
-  // }
+//  update_display();
 
   // if (!validate_current_drawn()) {
   //     Log.critical("Current drawn is over current limit!!!");
   //     change_state(ERROR_STATE);
   //     return;
   // } 
+
+  delay(10); // we go too fast
 
   return;
   

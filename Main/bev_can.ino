@@ -65,7 +65,7 @@ void sendMessage(unsigned id, unsigned *buffer, unsigned len) {
 
     Can0.write(msg);
 
-    Log.info(msg);
+//    Log.info(msg);
 }
 
 /*
@@ -75,6 +75,7 @@ void sendMessage(unsigned id, unsigned *buffer, unsigned len) {
  * For more information see Section 2.2.1 Inverter Enable Safety Options
  * of the RMS CAN Protocol Document
  */
+
 void sendInverterEnable() {
     cmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
     cmdMsg.flags.extended = 0;
@@ -83,7 +84,26 @@ void sendInverterEnable() {
     cmdMsg.buf[0] = 0; 
     cmdMsg.buf[1] = 0; 
     cmdMsg.buf[2] = 0; 
-    cmdMsg.buf[3] = 0; 
+    cmdMsg.buf[3] = 0;
+    cmdMsg.buf[4] = 1; 
+    cmdMsg.buf[5] = 0; 
+    cmdMsg.buf[6] = 0; 
+    cmdMsg.buf[7] = 0;
+
+    Can0.write(cmdMsg);
+
+//    Log.info(cmdMsg);
+}
+
+void sendInverterDisable() {
+    cmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
+    cmdMsg.flags.extended = 0;
+    cmdMsg.len = 8;
+
+    cmdMsg.buf[0] = 0; 
+    cmdMsg.buf[1] = 0; 
+    cmdMsg.buf[2] = 0; 
+    cmdMsg.buf[3] = 0;
     cmdMsg.buf[4] = 0; 
     cmdMsg.buf[5] = 0; 
     cmdMsg.buf[6] = 0; 
@@ -91,9 +111,8 @@ void sendInverterEnable() {
 
     Can0.write(cmdMsg);
 
-    Log.info(cmdMsg);
+//    Log.info(cmdMsg);
 }
-
 /*
  * sendRMSHeartbeat
  *
@@ -120,7 +139,30 @@ void sendRMSHeartbeat(){
     
     Can0.write(cmdMsg);
 
-    Log.info(cmdMsg);
+//    Log.info(cmdMsg);
+
+}
+
+void send_clear_faults() {
+
+    cmdMsg.id = RMS_PARAMETER_MSG1;
+    cmdMsg.flags.extended = 0;
+    cmdMsg.len = 8;
+
+    cmdMsg.buf[0] = 20; 
+    cmdMsg.buf[1] = 0; 
+    cmdMsg.buf[2] = 1; 
+    cmdMsg.buf[3] = 0;
+    cmdMsg.buf[4] = 0; 
+    cmdMsg.buf[5] = 0; 
+    cmdMsg.buf[6] = 0; 
+    cmdMsg.buf[7] = 0;
+
+    Can0.write(cmdMsg);
+
+//    Log.info(cmdMsg);
+
+
 
 }
 
@@ -130,7 +172,8 @@ void sendRMSHeartbeat(){
  * Callback function that assigns incoming signals to globals 
  */
 void canSniff(const CAN_message_t &msg){
-    Log.info(msg);
+
+//    Log.info(msg);
     
     if (msg.id >= RMS_ADDR_LOW && msg.id <= RMS_ADDR_HIGH) { 
 
@@ -312,7 +355,9 @@ void canSniff(const CAN_message_t &msg){
         }
 
     }
-    else {} // Unknown Message 
+    else { return; } // Unknown Message 
+
+//    Log.info(msg);
 
 }
 
