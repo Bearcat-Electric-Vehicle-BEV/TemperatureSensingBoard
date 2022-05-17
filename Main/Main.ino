@@ -84,6 +84,7 @@ int accel_ped_2_pos;
 double accel_ped_pos; // This is the resultant value after verifying accel_1 and accel_2
 double brake_val;
 double deltaCurrent; // This is max DC current limit - current current
+double motorSpeed;
 
 // In Nm. The motor is rated for 102Nm, but due to the uncertainty around battery capacity, we have capped the value to this value.
 // This value should be adjusted after physical testing
@@ -92,13 +93,22 @@ double max_safe_torque = 80;
 //y = -4570.8x6 + 14346x5 - 16327x4 + 7827.7x3 - 1323.3x2 + 127.54x - 0.3364
 double throttleSensitivityCurve[] = {-4570.8, 14346, -16327, 7827.7, -1323.3, 127.54, -0.3364};
 int throttleSensitivityCurve_N = 7;
+double minAccInput = 0;
+double maxAccInput = 1;
 
-// y = -8E-07x4 + 8E-05x4 - 0.0019x2 - 0.0191x + 1.0115
-double currentDeltaNFCurve[] = {-8E-7, 8E-5, -0.0019, -0.0191, 1.0115};
+double currentDeltaNFCurve[] = {-75.524, 75.929, -19.345, -1.9054, 1.0115};
 int currentDeltaNFCurve_N = 5;
+double currentDeltaCurve_inputMultiplier = 0.01; // Needed to get polynomial coefficients to not be too small or big
+double minDeltaCurrentInput = 0;
+double maxDeltaCurrentInput = 50;
 
-double RPMNegativeFeedbackCurve[] = {9E-13, -2E-8, 0.0003, -1.3643, 3584.1, -4E6};
-int RPMCurve_N = 6;
+double RPMNegativeFeedbackCurve[] = {-73.1935, 1508.7335, -11652.4883, 39966.6888, -51366.9768};
+int RPMCurve_N = 5;
+double RPMCurve_inputMultiplier = 0.001; // Needed to get polynomial coefficients to not be too small or big
+double minRPMInput = 5000;
+double maxRPMInput = 5500;
+
+bool shouldSimulateETCInputs = true;
 
 ECUState currentState;
 IntervalTimer Heartbeat;
@@ -196,6 +206,7 @@ void setup() {
   config.callback = watchdogCallback;
 //  wdt.begin(config);
 
+  randomSeed(1);
 
 }
 
@@ -222,7 +233,11 @@ void loop() {
 //
 //  Log.info(buffer);
 
-  simulateETCInputs(); // only for testing. Comment out if connected to motor controller
+  // only for testing. Comment out if connected to motor controller
+  if (shouldSimulateETCInputs) {
+    simulateETCInputs(); 
+  }
+  
   if(!ETC()) {
     Serial.println("Something went wrong with ETC");
   }
@@ -233,8 +248,6 @@ void loop() {
 //  Serial.print(": ");
 //  double rpm_NF = evaluatePolynomial(RPMNegativeFeedbackCurve, RPMCurve_N, temp_motorrpm);
 //  Serial.println(rpm_NF);
-  
-  delay(1000);
 
   // if (!validate_pedals(pedal_0, pedal_1)) {
   //     Log.critical("Pedal positions not within 10%!!!!"); 
@@ -372,9 +385,12 @@ void prechargeWait(){
 
 // function for testing ETC, by setting specific input values
 void simulateETCInputs() {
-  DCL = 200;
-  PackCurrent = 100;
-  MotorSpeed = 5200;
+//  DCL = 200;
+//  PackCurrent = 170;
+
+  motorSpeed = random(5000,5501);
+  accel_ped_pos = ((double)random(11))/10.0;
+  deltaCurrent = random(51);
 }
 
 // This function is responsible for processing input params for ETC
@@ -391,23 +407,32 @@ void processInputParameters() {
   deltaCurrent = DCL - PackCurrent; // DCL and PackCurrent are values received from the BMS via CAN
 }
 
+void capETCInputParameters() {
+  accel_ped_pos = capBetweenRange(accel_ped_pos, minAccInput, maxAccInput);
+  deltaCurrent = capBetweenRange(deltaCurrent, minDeltaCurrentInput, maxDeltaCurrentInput);
+  motorSpeed = capBetweenRange(motorSpeed, minRPMInput, maxRPMInput);
+}
+
 bool ETC() {
-  processInputParameters();
+  if (!shouldSimulateETCInputs) {
+    processInputParameters();
+  }
+  capETCInputParameters();
   
   double torque_from_pedal = capBetweenRange(evaluatePolynomial(throttleSensitivityCurve, throttleSensitivityCurve_N, accel_ped_pos), 0, max_safe_torque);
 
-  double currentDelta_NF = capBetweenZeroToOne(evaluatePolynomial(currentDeltaNFCurve, currentDeltaNFCurve_N, deltaCurrent));
-  double rpm_NF = capBetweenZeroToOne(evaluatePolynomial(RPMNegativeFeedbackCurve, RPMCurve_N, (double)MotorSpeed));
+  double currentDelta_NF = capBetweenZeroToOne(evaluatePolynomial(currentDeltaNFCurve, currentDeltaNFCurve_N, deltaCurrent * currentDeltaCurve_inputMultiplier));
+  double rpm_NF = capBetweenZeroToOne(evaluatePolynomial(RPMNegativeFeedbackCurve, RPMCurve_N, (double)motorSpeed * RPMCurve_inputMultiplier));
 
   double nf_weights[] = {currentDelta_NF, rpm_NF};
-  double NF_weight = getMax(nf_weights);
+  double NF_weight = getMax(nf_weights, 2);
 
   // This is the global parameter that whose value gets sent to the motor controller via CAN
   double finalTorque = (1.0-NF_weight) * torque_from_pedal;
   
   TorqueCommand = (int)finalTorque; // This is the variable whose value gets sent to the MC
 
-  String outputString = String(accel_ped_1_pos) + " " + String(accel_ped_pos) + " " + String(deltaCurrent) + " " + String(MotorSpeed) + " " + String(torque_from_pedal) + " " + String(currentDelta_NF) + " " + String(rpm_NF) + " " + String(NF_weight) + " " + String(finalTorque);
+  String outputString = "Acc_pos:" + String(accel_ped_pos) + " DeltaCurr:" + String(deltaCurrent) + " RPM:" + String(motorSpeed) + " only_pedal_torque:" + String(torque_from_pedal) + " deltaCurr_nw:" + String(currentDelta_NF) + " rpm_nw:" + String(rpm_NF) + " final_nw:" + String(NF_weight) + " finalTorque:" + String(finalTorque);
   Serial.println(outputString);
   
   return true;
@@ -436,18 +461,18 @@ double evaluatePolynomial2(double poly[], int n, double x) {
 }
 
 
-double getMax(double values[]) {
-  int n = sizeof(values)/sizeof(values[0]);
+double getMax(double values[], int n) {
   double largest = values[0];
   for(int i = 1;i < n; i++) {
     if(values[i] > largest) {
       largest = values[i];
     }
   }
+  return largest;
 }
 
 double capBetweenZeroToOne(double value) {
-    capBetweenRange(value, 0.0, 1.0);
+    return capBetweenRange(value, 0.0, 1.0);
 }
 
 double capBetweenRange(double value, double lb, double ub) {
