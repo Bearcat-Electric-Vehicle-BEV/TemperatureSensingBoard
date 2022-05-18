@@ -5,7 +5,6 @@
 #include <i2c_driver.h>
 #include <i2c_driver_wire.h>
 
-
 /*
  * I2C Library Used
  * https://github.com/Richard-Gemmell/teensy4_i2c
@@ -26,11 +25,11 @@
  * are needed.
  */
 
-#define MIN_I2C_ADDR 0x1
-#define UPDATE_DISPLAY_ADDR 0x40
-#define CAN_LOG_ADDR 0x41 
-#define EVENT_LOG_ADDR 0x42 
-#define MAX_I2C_ADDR 0x7F
+#define UPDATE_DISPLAY_SPEED 0x40
+#define UPDATE_DISPLAY_TEMP 0x41
+#define UPDATE_DISPLAY_PERCENT 0x42
+#define UPDATE_DISPLAY_DIST 0x43
+#define UPDATE_DISPLAY_TIME 0x44
 
 extern bool displayOnline;
 

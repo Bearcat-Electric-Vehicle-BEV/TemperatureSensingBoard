@@ -22,10 +22,10 @@
  *
  */
 
-#include "include/bev_i2c.h"
-#include "include/bev_can.h"
-#include "include/bev_logger.h"
-#include "include/bev_etc.h"
+#include "bev_i2c.h"
+#include "bev_can.h"
+#include "bev_logger.h"
+#include "bev_etc.h"
 
 #include "Watchdog_t4.h"
 
@@ -111,24 +111,14 @@ double maxRPMInput = 5500;
 bool shouldSimulateETCInputs = true;
 
 ECUState currentState;
+
 IntervalTimer Heartbeat;
+// IntervalTimer UpdateDisplay;
 
 // https://github.com/tonton81/WDT_T4
-WDT_T4<WDT1> wdt;
+// WDT_T4<WDT1> wdt;
 
-// RMS Command Parameters 
-int TorqueCommand = 0;
-int SpeedCommand = 0;
-int Direction = 0;
-int InverterEnabled = 0;
-int Duration = 0;
 
-// Display Parameters
-int Speed = 0;
-int Battery_Temp = 0;
-int Battery_Life = 0;
-int Range_KM = 0;
-int Range_Mins = 0;
 
 void change_state(ECUState newState) {
     currentState = newState;
@@ -169,13 +159,14 @@ void setup() {
   Wire.begin();
 
   if (!check_display_online()) {
-    Log.error("Display not online");
+    Serial.println("Display not online");
   }
 
   // Configure CAN BUS 0 
-  digitalWrite(PIN_CAN_TRANS_STDBY, LOW); /* optional tranceiver enable pin */
+  digitalWrite(PIN_CAN_TRANS_STDBY, LOW); /* tranceiver enable pin */
+  
   Can0.begin();
-  Can0.setBaudRate(500000);
+  Can0.setBaudRate(250000);
   Can0.setMaxMB(16);
   Can0.enableFIFO();
   Can0.enableFIFOInterrupt();
@@ -207,6 +198,72 @@ void setup() {
 //  wdt.begin(config);
 
   randomSeed(1);
+  Can0.setMBFilter(REJECT_ALL);
+  
+  Can0.setMB(MB0, RX, STD);  // 0x0A2 Temperature #3
+  Can0.setMB(MB1, RX, STD);  // 0x0A5 Motor Position Information
+  Can0.setMB(MB2, RX, STD);  // 0x0AB Fault Codes
+  Can0.setMB(MB3, RX, STD);  // 0x0AC Torque and Timer Information
+  Can0.setMB(MB4, RX, STD);  // 0x0AF Diagnostic Data
+  
+  // Can0.setMB(MB5, TX);  // 0x0C0 Command Message
+  // Can0.setMB(MB6, TX);  // 0x0C8 Parameter Message 
+  // Can0.setMB(MB7, TX);
+  // Can0.setMB(MB8, TX);
+  // Can0.setMB(MB9, TX);
+  // Can0.setMB(MB10, TX);
+  // Can0.setMB(MB11, TX);
+  // Can0.setMB(MB12, TX);
+  // Can0.setMB(MB13, TX);
+  // Can0.setMB(MB14, TX);
+  // Can0.setMB(MB15, TX);
+
+  // TODO: create message specific callbacks
+  Can0.onReceive(MB0, canSniff);
+  Can0.onReceive(MB1, canSniff);
+  Can0.onReceive(MB2, canSniff);
+  Can0.onReceive(MB3, canSniff);
+  Can0.onReceive(MB4, canSniff);
+
+  // RX
+  Can0.setMBFilter(MB0, RMS_TEMPERATURES_3);
+  Can0.setMBFilter(MB1, RMS_MOTOR_POSITION_INFO);
+  Can0.setMBFilter(MB2, RMS_FAULT_CODES);
+  Can0.setMBFilter(MB3, RMS_TORQUE_AND_TIMER_INFORMATION);
+  Can0.setMBFilter(MB4, RMS_DIAGNOSTIC_DATA);
+
+  // TX
+  // Can0.setMBUserFilter(MB5, RMS_COMMAND_MESSGE_ADDR, 0xFF);
+  // Can0.setMBUserFilter(MB6, RMS_PARAMETER_MSG1, 0xFF);
+  
+  Can0.enableMBInterrupts(MB0);
+  Can0.enableMBInterrupts(MB1);
+  Can0.enableMBInterrupts(MB2);
+  Can0.enableMBInterrupts(MB3);
+  Can0.enableMBInterrupts(MB4);
+  // Can0.enableMBInterrupts(MB5);
+  // Can0.enableMBInterrupts(MB6);
+
+  Can0.mailboxStatus();
+
+  // PM100Dx Command Message Heartbeat
+  Heartbeat.priority(128);
+  Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
+  // UpdateDisplay.priority(127);
+  // UpdateDisplay.begin(update_display, 1000000);
+
+  // Initialize the watchdog timer
+  // WDT_timings_t config;
+  // config.trigger = 5; /* in seconds, 0->128 */
+  // config.timeout = 10; /* in seconds, 0->128 */
+  // config.callback = watchdogCallback;
+  // wdt.begin(config);
+
+  if (!enable_motor()) {
+      sendInverterDisable();
+      Log.critical("Unable to enable motor!!!"); 
+      change_state(ERROR_STATE);
+  }
 
 }
 
@@ -216,50 +273,56 @@ void loop() {
    * Function corresponding to state is called inside conditional. Boolean 
    * value determines if machine needs to switch states.
    */
-
+  
   // Watchdog reset
   // wdt.feed();
 
   // Can0.events();
 
-//  if(checkFaultCodes()) {
-//      dump_fault_codes();
-//  }
-
-//
-//  char buffer[100];
-//  snprintf(buffer, 100, "Pedal Pos 0:%d Pedal Pos 1:%d", 
-//            pedal_0, pedal_1);
-//
-//  Log.info(buffer);
-
   // only for testing. Comment out if connected to motor controller
-  if (shouldSimulateETCInputs) {
-    simulateETCInputs(); 
-  }
+  // if (shouldSimulateETCInputs) {
+  //   simulateETCInputs(); 
+  // }
   
   if(!ETC()) {
     Serial.println("Something went wrong with ETC");
   }
 
-// Debug code to test rpm negative feedback curve
-//  double temp_motorrpm = (min(1.0 - (analogRead(PIN_ACCEL_0)-808)/116.0, 1.0)) * 500 + 5000;
-//  Serial.print(temp_motorrpm);
-//  Serial.print(": ");
-//  double rpm_NF = evaluatePolynomial(RPMNegativeFeedbackCurve, RPMCurve_N, temp_motorrpm);
-//  Serial.println(rpm_NF);
-
-  // if (!validate_pedals(pedal_0, pedal_1)) {
-  //     Log.critical("Pedal positions not within 10%!!!!"); 
-  //     change_state(ERROR_STATE);
-  //     return;
+  if (checkFaultCodes()) {
+      dump_fault_codes();
+      send_clear_faults();
+      // TODO: error
+  }
+  // } else if (faultPersistant){
+  //     send_clear_faults();
+  //     faultPersistant = false;
+  // } else {
+  //   // TODO: remove
   // }
+
+  int pedal_0 = analogRead(PIN_ACCEL_0);
+  int pedal_1 = analogRead(PIN_ACCEL_1);
+
+  if (!validate_pedals(pedal_0, pedal_1)) {
+      sendInverterDisable();
+      Log.critical("Pedal positions not within 10%!!!!"); 
+      // change_state(ERROR_STATE);
+      return;
+  }
+  
+  apply_pedals(pedal_0);
+
+  Can0.disableMBInterrupts();
+  update_display();
+  Can0.enableMBInterrupts();
 
   // if (!validate_current_drawn()) {
   //     Log.critical("Current drawn is over current limit!!!");
   //     change_state(ERROR_STATE);
   //     return;
   // } 
+
+  delay(100); // we go too fast
 
   return;
   

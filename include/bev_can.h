@@ -1,10 +1,11 @@
 #ifndef BEV_CAN_H
 #define BEV_CAN_H
 
-#include <FlexCAN_T4.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+
+#include <FlexCAN_T4.h>
 
 /*
  * CAN Library Used
@@ -89,14 +90,24 @@ extern unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurr
 // BMS Fault Signals
 extern uint32_t bms_faults[3];
 
+extern bool faultPersistant;
+
+extern int TorqueCommand;
+extern int SpeedCommand;
+extern int Direction;
+extern int InverterEnabled;
+extern int Duration;
+
 extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 extern CAN_message_t cmdMsg;
 
 void dump_fault_codes();
 bool checkFaultCodes();
+void send_clear_faults();
 void sendMessage(unsigned id, unsigned *buffer, unsigned len);
 void canSniff(const CAN_message_t &msg);
 void printCANMsg(const CAN_message_t &msg);
+void sendInverterDisable();
 void sendInverterEnable();
 void sendRMSHeartbeat();
 void can_2_str(const CAN_message_t &msg, char *buffer, size_t len);
