@@ -84,7 +84,7 @@ bool log_2_display(const char* dataString)
         return false;
     }
 
-    display_write(EVENT_LOG_ADDR, dataString);
+    // display_write(EVENT_LOG_ADDR, dataString);
 
     return true;
 }
@@ -97,7 +97,7 @@ bool log_2_display(const CAN_message_t &msg)
 
     char buffer[100];
     can_2_str(msg, buffer, 100);
-    display_write(CAN_LOG_ADDR, buffer);
+    // display_write(CAN_LOG_ADDR, buffer);
 
     return true;
 }

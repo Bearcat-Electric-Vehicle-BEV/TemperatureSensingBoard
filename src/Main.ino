@@ -73,7 +73,7 @@ static const char *STATE_STRING[] = {
 ECUState currentState;
 
 IntervalTimer Heartbeat;
-//IntervalTimer UpdateDisplay;
+// IntervalTimer UpdateDisplay;
 
 // https://github.com/tonton81/WDT_T4
 // WDT_T4<WDT1> wdt;
@@ -114,15 +114,13 @@ void setup() {
   pinMode(PIN_SOC, INPUT);
   pinMode(PIN_SPEAKER, OUTPUT);
   pinMode(PIN_RESET, INPUT);
-
-  
  
   // Teensy I2C Master Code
-//  Wire.begin();
+  Wire.begin();
 
-//  if (!check_display_online()) {
-//    Serial.println("Display not online");
-//  }
+  if (!check_display_online()) {
+    Serial.println("Display not online");
+  }
 
   // Configure CAN BUS 0 
   digitalWrite(PIN_CAN_TRANS_STDBY, LOW); /* tranceiver enable pin */
@@ -130,17 +128,58 @@ void setup() {
   Can0.begin();
   Can0.setBaudRate(250000);
   Can0.setMaxMB(16);
-  Can0.setMB(MB0,RX,STD);
   Can0.setMBFilter(REJECT_ALL);
-  Can0.enableMBInterrupts();
-  Can0.onReceive(canSniff);
-//  Can0.setMBFilter(MB0, RMS_MOTOR_POSITION_INFO);
-//  Can0.setMBUserFilter(MB0,RMS_MOTOR_POSITION_INFO,RMS_MOTOR_POSITION_INFO);
+  
+  Can0.setMB(MB0, RX, STD);  // 0x0A2 Temperature #3
+  Can0.setMB(MB1, RX, STD);  // 0x0A5 Motor Position Information
+  Can0.setMB(MB2, RX, STD);  // 0x0AB Fault Codes
+  Can0.setMB(MB3, RX, STD);  // 0x0AC Torque and Timer Information
+  Can0.setMB(MB4, RX, STD);  // 0x0AF Diagnostic Data
+  
+  // Can0.setMB(MB5, TX);  // 0x0C0 Command Message
+  // Can0.setMB(MB6, TX);  // 0x0C8 Parameter Message 
+  // Can0.setMB(MB7, TX);
+  // Can0.setMB(MB8, TX);
+  // Can0.setMB(MB9, TX);
+  // Can0.setMB(MB10, TX);
+  // Can0.setMB(MB11, TX);
+  // Can0.setMB(MB12, TX);
+  // Can0.setMB(MB13, TX);
+  // Can0.setMB(MB14, TX);
+  // Can0.setMB(MB15, TX);
+
+  // TODO: create message specific callbacks
+  Can0.onReceive(MB0, canSniff);
+  Can0.onReceive(MB1, canSniff);
+  Can0.onReceive(MB2, canSniff);
+  Can0.onReceive(MB3, canSniff);
+  Can0.onReceive(MB4, canSniff);
+
+  // RX
+  Can0.setMBFilter(MB0, RMS_TEMPERATURES_3);
+  Can0.setMBFilter(MB1, RMS_MOTOR_POSITION_INFO);
+  Can0.setMBFilter(MB2, RMS_FAULT_CODES);
+  Can0.setMBFilter(MB3, RMS_TORQUE_AND_TIMER_INFORMATION);
+  Can0.setMBFilter(MB4, RMS_DIAGNOSTIC_DATA);
+
+  // TX
+  // Can0.setMBUserFilter(MB5, RMS_COMMAND_MESSGE_ADDR, 0xFF);
+  // Can0.setMBUserFilter(MB6, RMS_PARAMETER_MSG1, 0xFF);
+  
+  Can0.enableMBInterrupts(MB0);
+  Can0.enableMBInterrupts(MB1);
+  Can0.enableMBInterrupts(MB2);
+  Can0.enableMBInterrupts(MB3);
+  Can0.enableMBInterrupts(MB4);
+  // Can0.enableMBInterrupts(MB5);
+  // Can0.enableMBInterrupts(MB6);
+
   Can0.mailboxStatus();
 
   // PM100Dx Command Message Heartbeat
   Heartbeat.priority(128);
   Heartbeat.begin(sendRMSHeartbeat, HEARTBEAT); // send message at least every half second
+  // UpdateDisplay.priority(127);
   // UpdateDisplay.begin(update_display, 1000000);
 
   // Initialize the watchdog timer
@@ -170,9 +209,17 @@ void loop() {
 
   Can0.events();
 
-  if(checkFaultCodes()) {
+  if (checkFaultCodes()) {
       dump_fault_codes();
+      send_clear_faults();
+      // TODO: error
   }
+  // } else if (faultPersistant){
+  //     send_clear_faults();
+  //     faultPersistant = false;
+  // } else {
+  //   // TODO: remove
+  // }
 
   int pedal_0 = analogRead(PIN_ACCEL_0);
   int pedal_1 = analogRead(PIN_ACCEL_1);
@@ -180,13 +227,15 @@ void loop() {
   if (!validate_pedals(pedal_0, pedal_1)) {
       sendInverterDisable();
       Log.critical("Pedal positions not within 10%!!!!"); 
-      change_state(ERROR_STATE);
+      // change_state(ERROR_STATE);
       return;
   }
   
   apply_pedals(pedal_0);
 
-//  update_display();
+  Can0.disableMBInterrupts();
+  update_display();
+  Can0.enableMBInterrupts();
 
   // if (!validate_current_drawn()) {
   //     Log.critical("Current drawn is over current limit!!!");
@@ -194,7 +243,7 @@ void loop() {
   //     return;
   // } 
 
-  delay(10); // we go too fast
+  delay(100); // we go too fast
 
   return;
   

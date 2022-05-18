@@ -30,6 +30,8 @@ uint8_t Diagnostic_Index, Diagnostic_SubIndex, Record_0, Record_1, Record_2, Rec
 unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurrent, AverageTemperature, CheckSum;
 uint32_t bms_faults[3];
 
+bool faultPersistant = false;
+
 // RMS Command Parameters 
 int TorqueCommand = 0;
 int SpeedCommand = 0;
@@ -41,16 +43,20 @@ bool checkFaultCodes() {
 
     // Motor Controller 
     for (uint8_t i=0; i<16; i++) {
-        if (POSTFaultLo & (1 << i)) return true;
-        if (POSTFaultHi & (1 << i)) return true;
-        if (RunFaultLo & (1 << i)) return true;
-        if (RunFaultHi & (1 << i)) return true;
+        if ((POSTFaultLo & (1 << i)) || (POSTFaultHi & (1 << i)) ||
+            (RunFaultLo & (1 << i)) || (RunFaultHi & (1 << i))) 
+        {
+            return (faultPersistant = true);
+        }
     }
     
     // BMS
     for (uint8_t i=0; i<sizeof(bms_faults)/sizeof(uint32_t); i++) {
-        if (bms_faults[i]) return true;
+        if (bms_faults[i]) {
+            return (faultPersistant = true);
+        }
     }
+
 
     return false;
 
@@ -173,6 +179,10 @@ void send_clear_faults() {
 
 }
 
+
+
+
+
 /*
  * canSniff
  *
@@ -181,7 +191,7 @@ void send_clear_faults() {
 void canSniff(const CAN_message_t &msg){
 
 //    Log.info(msg);
-    
+
     if (msg.id >= RMS_ADDR_LOW && msg.id <= RMS_ADDR_HIGH) { 
 
         switch(msg.id) {

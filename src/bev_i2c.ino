@@ -15,12 +15,17 @@ void display_write(int addr, const char *string) {
 }
 
 void update_display() {
-    unsigned Range_KM = 0, Range_Mins = 0;
-    
-    char buffer[100];
-    snprintf(buffer, 100, "%d,%d,%d,%d,%d",
-      MotorSpeed, InternalTemperature, SOC, Range_KM, Range_Mins);
-    display_write(UPDATE_DISPLAY_ADDR, buffer);
+    Wire.beginTransmission(UPDATE_DISPLAY_SPEED);
+    Wire.write(TorqueFeedback);
+    Wire.endTransmission();
+    delay(10);
+    return;
+    Wire.write(MotorTemperature);
+    Wire.write(SOC);
+    Wire.write(96);
+    Wire.write(69);
+    Wire.endTransmission();
+    delay(10);
 }
 
 /*
@@ -31,7 +36,7 @@ void update_display() {
 bool check_display_online(){
   
     if (displayOnline) {
-        Wire.beginTransmission(UPDATE_DISPLAY_ADDR);
+        Wire.beginTransmission(0x40);
         if (Wire.endTransmission() != 0) {
             displayOnline = false;
         }

@@ -90,6 +90,8 @@ extern unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurr
 // BMS Fault Signals
 extern uint32_t bms_faults[3];
 
+extern bool faultPersistant;
+
 extern int TorqueCommand;
 extern int SpeedCommand;
 extern int Direction;
