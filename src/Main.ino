@@ -283,6 +283,9 @@ void loop() {
   // if (shouldSimulateETCInputs) {
   //   simulateETCInputs(); 
   // }
+
+  int pedal_0 = analogRead(PIN_ACCEL_0);
+  int pedal_1 = analogRead(PIN_ACCEL_1);
   
   if(!ETC()) {
     Serial.println("Something went wrong with ETC");
@@ -299,21 +302,11 @@ void loop() {
   // } else {
   //   // TODO: remove
   // }
-
-  int pedal_0 = analogRead(PIN_ACCEL_0);
-  int pedal_1 = analogRead(PIN_ACCEL_1);
-
-  if (!validate_pedals(pedal_0, pedal_1)) {
-      sendInverterDisable();
-      Log.critical("Pedal positions not within 10%!!!!"); 
-      // change_state(ERROR_STATE);
-      return;
-  }
   
-  apply_pedals(pedal_0);
+  // apply_pedals(pedal_0);
 
   Can0.disableMBInterrupts();
-  update_display();
+  // update_display();
   Can0.enableMBInterrupts();
 
   // if (!validate_current_drawn()) {
@@ -451,9 +444,13 @@ void simulateETCInputs() {
 //  DCL = 200;
 //  PackCurrent = 170;
 
-  motorSpeed = random(5000,5501);
-  accel_ped_pos = ((double)random(11))/10.0;
-  deltaCurrent = random(51);
+  // motorSpeed = random(5000,5501);
+  // accel_ped_pos = ((double)random(11))/10.0;
+  // deltaCurrent = random(51);
+
+  motorSpeed = 10;
+  accel_ped_pos = 0.05;
+  deltaCurrent = 100;
 }
 
 // This function is responsible for processing input params for ETC
@@ -462,6 +459,13 @@ void processInputParameters() {
   accel_ped_1_pos = analogRead(PIN_ACCEL_0);
   accel_ped_2_pos = analogRead(PIN_ACCEL_1);
   brake_val = analogRead(PIN_BRAKE_POS);
+
+  if (!validate_pedals(accel_ped_1_pos, accel_ped_2_pos)) {
+      sendInverterDisable();
+      Log.critical("Pedal positions not within 10%!!!!"); 
+      // change_state(ERROR_STATE);
+      return;
+  }
   
   // temp, should do additional processing
   // It should be investigates as to why the pedal values only go from 924 and 808
