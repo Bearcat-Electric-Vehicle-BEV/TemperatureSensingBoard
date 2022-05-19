@@ -34,7 +34,7 @@
 extern bool displayOnline;
 
 void display_write(int addr, const char *string);
-void updateDisplay();
+void update_display();
 bool check_display_online();
 
 #endif // BEV_I2C_H
