@@ -91,9 +91,9 @@ double motorSpeed;
 double max_safe_torque = 80; 
 
 //y = -4570.8x6 + 14346x5 - 16327x4 + 7827.7x3 - 1323.3x2 + 127.54x - 0.3364
-double throttleSensitivityCurve[] = {-4570.8, 14346, -16327, 7827.7, -1323.3, 127.54, -0.3364};
+double throttleSensitivityCurve[] = {-4942.1, 15757, -18538, 9616.5, -2076.3, 272.37, -9.7821};
 int throttleSensitivityCurve_N = 7;
-double minAccInput = 0;
+double minAccInput = 0.05;
 double maxAccInput = 1;
 
 double currentDeltaNFCurve[] = {-75.524, 75.929, -19.345, -1.9054, 1.0115};
@@ -108,7 +108,7 @@ double RPMCurve_inputMultiplier = 0.001; // Needed to get polynomial coefficient
 double minRPMInput = 5000;
 double maxRPMInput = 5500;
 
-bool shouldSimulateETCInputs = true;
+bool shouldSimulateETCInputs = false;
 
 ECUState currentState;
 
@@ -283,9 +283,6 @@ void loop() {
   // if (shouldSimulateETCInputs) {
   //   simulateETCInputs(); 
   // }
-
-  int pedal_0 = analogRead(PIN_ACCEL_0);
-  int pedal_1 = analogRead(PIN_ACCEL_1);
   
   if(!ETC()) {
     Serial.println("Something went wrong with ETC");
@@ -496,10 +493,19 @@ bool ETC() {
 
   // This is the global parameter that whose value gets sent to the motor controller via CAN
   double finalTorque = (1.0-NF_weight) * torque_from_pedal;
+
+  if(finalTorque == 0) {
+    sendInverterDisable();
+    InverterEnabled = 0;
+  }
+  else {
+    sendInverterEnable();
+    InverterEnabled = 1;
+  }
   
   TorqueCommand = (int)finalTorque; // This is the variable whose value gets sent to the MC
 
-  String outputString = "Acc_pos:" + String(accel_ped_pos) + " DeltaCurr:" + String(deltaCurrent) + " RPM:" + String(motorSpeed) + " only_pedal_torque:" + String(torque_from_pedal) + " deltaCurr_nw:" + String(currentDelta_NF) + " rpm_nw:" + String(rpm_NF) + " final_nw:" + String(NF_weight) + " finalTorque:" + String(finalTorque);
+  String outputString = "Acc_pos:" + String(accel_ped_pos) + " DeltaCurr:" + String(deltaCurrent) + " RPM:" + String(motorSpeed) + " only_pedal_torque:" + String(torque_from_pedal) + " deltaCurr_nw:" + String(currentDelta_NF) + " rpm_nw:" + String(rpm_NF) + " final_nw:" + String(NF_weight) + " finalTorque:" + String(finalTorque) + " is inverter enabled: " + String(InverterEnabled);
   Serial.println(outputString);
   
   return true;
