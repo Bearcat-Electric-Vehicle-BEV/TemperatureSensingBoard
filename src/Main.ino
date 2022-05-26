@@ -108,7 +108,7 @@ double RPMCurve_inputMultiplier = 0.001; // Needed to get polynomial coefficient
 double minRPMInput = 5000;
 double maxRPMInput = 5500;
 
-bool shouldSimulateETCInputs = false;
+bool shouldSimulateETCInputs = true;
 
 ECUState currentState;
 
@@ -198,13 +198,13 @@ void setup() {
 //  wdt.begin(config);
 
   randomSeed(1);
-  Can0.setMBFilter(REJECT_ALL);
+  // Can0.setMBFilter(REJECT_ALL);
   
-  Can0.setMB(MB0, RX, STD);  // 0x0A2 Temperature #3
-  Can0.setMB(MB1, RX, STD);  // 0x0A5 Motor Position Information
-  Can0.setMB(MB2, RX, STD);  // 0x0AB Fault Codes
-  Can0.setMB(MB3, RX, STD);  // 0x0AC Torque and Timer Information
-  Can0.setMB(MB4, RX, STD);  // 0x0AF Diagnostic Data
+  // Can0.setMB(MB0, RX, STD);  // 0x0A2 Temperature #3
+  // Can0.setMB(MB1, RX, STD);  // 0x0A5 Motor Position Information
+  // Can0.setMB(MB2, RX, STD);  // 0x0AB Fault Codes
+  // Can0.setMB(MB3, RX, STD);  // 0x0AC Torque and Timer Information
+  // Can0.setMB(MB4, RX, STD);  // 0x0AF Diagnostic Data
   
   // Can0.setMB(MB5, TX);  // 0x0C0 Command Message
   // Can0.setMB(MB6, TX);  // 0x0C8 Parameter Message 
@@ -219,11 +219,11 @@ void setup() {
   // Can0.setMB(MB15, TX);
 
   // TODO: create message specific callbacks
-  Can0.onReceive(MB0, canSniff);
-  Can0.onReceive(MB1, canSniff);
-  Can0.onReceive(MB2, canSniff);
-  Can0.onReceive(MB3, canSniff);
-  Can0.onReceive(MB4, canSniff);
+  // Can0.onReceive(MB0, canSniff);
+  // Can0.onReceive(MB1, canSniff);
+  // Can0.onReceive(MB2, canSniff);
+  // Can0.onReceive(MB3, canSniff);
+  // Can0.onReceive(MB4, canSniff);
 
   // RX
   Can0.setMBFilter(MB0, RMS_TEMPERATURES_3);
@@ -236,11 +236,11 @@ void setup() {
   // Can0.setMBUserFilter(MB5, RMS_COMMAND_MESSGE_ADDR, 0xFF);
   // Can0.setMBUserFilter(MB6, RMS_PARAMETER_MSG1, 0xFF);
   
-  Can0.enableMBInterrupts(MB0);
-  Can0.enableMBInterrupts(MB1);
-  Can0.enableMBInterrupts(MB2);
-  Can0.enableMBInterrupts(MB3);
-  Can0.enableMBInterrupts(MB4);
+  // Can0.enableMBInterrupts(MB0);
+  // Can0.enableMBInterrupts(MB1);
+  // Can0.enableMBInterrupts(MB2);
+  // Can0.enableMBInterrupts(MB3);
+  // Can0.enableMBInterrupts(MB4);
   // Can0.enableMBInterrupts(MB5);
   // Can0.enableMBInterrupts(MB6);
 
@@ -277,13 +277,13 @@ void loop() {
   // Watchdog reset
   // wdt.feed();
 
-  // Can0.events();
-
-  // only for testing. Comment out if connected to motor controller
-  // if (shouldSimulateETCInputs) {
-  //   simulateETCInputs(); 
-  // }
+  Can0.events();
   
+  String tempBMSVars = "SOC:" + String(SOC) + " DCL:" + String(DCL) + " InternalTemperature:" + String(InternalTemperature) + " HighestCellVoltage:" + String(HighestCellVoltage) + " PackCurrent:" + String(PackCurrent) + " AverageTemperature:" + String(AverageTemperature) + " CheckSum:" + String(CheckSum);
+  Serial.println(tempBMSVars);
+
+  Serial.println(MotorSpeed);
+
   if(!ETC()) {
     Serial.println("Something went wrong with ETC");
   }
@@ -302,9 +302,9 @@ void loop() {
   
   // apply_pedals(pedal_0);
 
-  Can0.disableMBInterrupts();
-  // update_display();
-  Can0.enableMBInterrupts();
+  // Can0.disableMBInterrupts();
+  //update_display();
+  // Can0.enableMBInterrupts();
 
   // if (!validate_current_drawn()) {
   //     Log.critical("Current drawn is over current limit!!!");
@@ -444,9 +444,7 @@ void simulateETCInputs() {
   // motorSpeed = random(5000,5501);
   // accel_ped_pos = ((double)random(11))/10.0;
   // deltaCurrent = random(51);
-
-  motorSpeed = 10;
-  accel_ped_pos = 0.05;
+  //accel_ped_pos = 0.05;
   deltaCurrent = 100;
 }
 
@@ -456,17 +454,18 @@ void processInputParameters() {
   accel_ped_1_pos = analogRead(PIN_ACCEL_0);
   accel_ped_2_pos = analogRead(PIN_ACCEL_1);
   brake_val = analogRead(PIN_BRAKE_POS);
+  motorSpeed = MotorSpeed;
 
-  if (!validate_pedals(accel_ped_1_pos, accel_ped_2_pos)) {
-      sendInverterDisable();
-      Log.critical("Pedal positions not within 10%!!!!"); 
-      // change_state(ERROR_STATE);
-      return;
-  }
+  // if (!validate_pedals(accel_ped_1_pos, accel_ped_2_pos)) {
+  //     sendInverterDisable();
+  //     Log.critical("Pedal positions not within 10%!!!!"); 
+  //     // change_state(ERROR_STATE);
+  //     return;
+  // }
   
   // temp, should do additional processing
   // It should be investigates as to why the pedal values only go from 924 and 808
-  accel_ped_pos = min(1.0 - (accel_ped_1_pos-808)/116.0, 1.0);
+  accel_ped_pos = min(1.0 - (accel_ped_1_pos)/931.0, 1.0);
  
   deltaCurrent = DCL - PackCurrent; // DCL and PackCurrent are values received from the BMS via CAN
 }
@@ -478,8 +477,9 @@ void capETCInputParameters() {
 }
 
 bool ETC() {
-  if (!shouldSimulateETCInputs) {
-    processInputParameters();
+  processInputParameters();
+  if(shouldSimulateETCInputs) {
+    simulateETCInputs();
   }
   capETCInputParameters();
   
@@ -495,17 +495,21 @@ bool ETC() {
   double finalTorque = (1.0-NF_weight) * torque_from_pedal;
 
   if(finalTorque == 0) {
-    sendInverterDisable();
-    InverterEnabled = 0;
+    if(InverterEnabled) {
+      sendInverterDisable();
+      InverterEnabled = 0;
+    }
   }
   else {
-    sendInverterEnable();
-    InverterEnabled = 1;
+    if(InverterEnabled == 0) {
+      sendInverterEnable();
+      InverterEnabled = 1;
+    }
   }
   
   TorqueCommand = (int)finalTorque; // This is the variable whose value gets sent to the MC
 
-  String outputString = "Acc_pos:" + String(accel_ped_pos) + " DeltaCurr:" + String(deltaCurrent) + " RPM:" + String(motorSpeed) + " only_pedal_torque:" + String(torque_from_pedal) + " deltaCurr_nw:" + String(currentDelta_NF) + " rpm_nw:" + String(rpm_NF) + " final_nw:" + String(NF_weight) + " finalTorque:" + String(finalTorque) + " is inverter enabled: " + String(InverterEnabled);
+  String outputString = "acc 1: " + String(accel_ped_1_pos) + " Final Acc_pos:" + String(accel_ped_pos) + " DeltaCurr:" + String(deltaCurrent) + " RPM:" + String(MotorSpeed) + " only_pedal_torque:" + String(torque_from_pedal) + " deltaCurr_nw:" + String(currentDelta_NF) + " rpm_nw:" + String(rpm_NF) + " final_nw:" + String(NF_weight) + " finalTorque:" + String(finalTorque) + " is inverter enabled: " + String(InverterEnabled);
   Serial.println(outputString);
   
   return true;
