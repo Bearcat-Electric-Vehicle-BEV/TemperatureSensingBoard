@@ -7,11 +7,6 @@
 
 #include <FlexCAN_T4.h>
 
-/*
- * CAN Library Used
- * https://github.com/tonton81/FlexCAN_T4
- */
-
 #define BAUD_RATE 250000
 #define HEARTBEAT 500000
 #define NUM_RX_MAILBOXES 2
@@ -46,6 +41,34 @@
 #define RMS_PARAMETER_MSG2 0x0C2
 #define RMS_ADDR_HIGH 0x0C2
 
+/*
+ * BMS Specific Addresses
+ * Messages are in 11-bit format, there exists an extended 29-bit
+ * and J1939 format. These are located in the data sheet. In order to
+ * disable a parameter in the broadcast message, a specifc configuration
+ * needs sent in the parameter command message.
+ */
+
+#define BMS_ADDR_LOW 0x6B1
+#define BMS_MSG1 0x6B1
+#define BMS_FAULTS1 0x6B2
+#define BMS_FAULTS2 0x6B3
+#define BMS_FAULTS3 0x6B4
+#define BMS_ADDR_HIGH 0x6B4
+
+// Global CAN Bus and Command Message, and Command Parameters
+
+extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
+extern CAN_message_t CmdMsg;
+
+extern uint8_t TorqueCommand;
+extern uint8_t SpeedCommand;
+extern uint8_t Direction;
+extern uint8_t InverterEnabled;
+extern uint8_t Duration;
+
+// RMS CAN Msg Parameters
+
 extern uint16_t ModuleATemperature, ModuleBTemperature, ModuleCTemperature, GateDriverBoardTemperature;
 extern uint16_t ControlBoardTemperature, RTD1Temperature, RTD2Temperature, RTD3Temperature;
 extern uint16_t RTD4Temperature, RTD5Temperature, MotorTemperature, TorqueShudder;
@@ -68,49 +91,27 @@ extern uint16_t id_cmd, modulation, flux_weak_out;
 extern uint16_t vq_cmd, vd_cmd, vqs_cmd;
 extern uint16_t voltage12_pwmfreq, run_faults_lo, run_faults_hi;
 
-
-/*
- * BMS Specific Addresses
- * Messages are in 11-bit format, there exists an extended 29-bit
- * and J1939 format. These are located in the data sheet. In order to
- * disable a parameter in the broadcast message, a specifc configuration
- * needs sent in the parameter command message.
- */
-
-#define BMS_ADDR_LOW 0x6B1
-#define BMS_MSG1 0x6B1
-#define BMS_FAULTS1 0x6B2
-#define BMS_FAULTS2 0x6B3
-#define BMS_FAULTS3 0x6B4
-#define BMS_ADDR_HIGH 0x6B4
-
 // BMS Parameter Signals 
+
 extern unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurrent, AverageTemperature, CheckSum;
 
 // BMS Fault Signals
+
 extern uint32_t bms_faults[3];
 
-extern bool faultPersistant;
+/* Function Prototype */
 
-extern int TorqueCommand;
-extern int SpeedCommand;
-extern int Direction;
-extern int InverterEnabled;
-extern int Duration;
-
-extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-extern CAN_message_t cmdMsg;
-
-void dump_fault_codes();
-bool checkFaultCodes();
-void send_clear_faults();
-void sendMessage(unsigned id, unsigned *buffer, unsigned len);
-void canSniff(const CAN_message_t &msg);
-void printCANMsg(const CAN_message_t &msg);
-void sendInverterDisable();
-void sendInverterEnable();
-void sendRMSHeartbeat();
-void can_2_str(const CAN_message_t &msg, char *buffer, size_t len);
+void CANInit();
+void DumpFaultCodes();
+bool CheckFaultCodes();
+void SendClearFaults();
+bool SendMessage(unsigned id, unsigned *buffer, unsigned len);
+void CanSniff(const CAN_message_t &msg);
+void PrintCANMsg(const CAN_message_t &msg);
+void SendInverterDisable();
+void SendInverterEnable();
+void SendRMSHeartbeat();
+void CAN2Str(const CAN_message_t &msg, char *buffer, size_t len);
 
 
 #endif // BEV_CAN_H
