@@ -66,11 +66,6 @@ void setup() {
 
   randomSeed(1);
 
-  // PM100Dx Command Message Heartbeat
-  // TODO: there is a compiler warning
-  // Heartbeat.priority(128);
-  // Heartbeat.begin(SendRMSHeartbeat, HEARTBEAT); // send message at least every half second
-
   EnableMotor(); // TODO: in future may return bool
   SendInverterDisable();
   Log.critical("Unable to enable motor!!!"); 
@@ -96,7 +91,8 @@ void loop() {
   
   Can0.events();
   
-  //cringe
+
+
   String tempBMSVars = "SOC:" + String(SOC) + " DCL:" + String(DCL) + " InternalTemperature:" + String(InternalTemperature) + " HighestCellVoltage:" + String(HighestCellVoltage) + " PackCurrent:" + String(PackCurrent) + " AverageTemperature:" + String(AverageTemperature) + " CheckSum:" + String(CheckSum);
   Serial.println(tempBMSVars);
 

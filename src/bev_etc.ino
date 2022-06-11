@@ -293,7 +293,6 @@ bool ETC() {
   
   TorqueCommand = (int)finalTorque; // This is the variable whose value gets sent to the MC
 
-  // cringe strings and 80 col
   String outputString = "acc 1: " + String(accel_ped_1_pos) + " Final Acc_pos:" + String(accel_ped_pos) + " DeltaCurr:" + String(deltaCurrent) + " RPM:" + String(MotorSpeed) + " only_pedal_torque:" + String(torque_from_pedal) + " deltaCurr_nw:" + String(currentDelta_NF) + " rpm_nw:" + String(rpm_NF) + " final_nw:" + String(NF_weight) + " finalTorque:" + String(finalTorque) + " is inverter enabled: " + String(InverterEnabled);
   Serial.println(outputString);
   
