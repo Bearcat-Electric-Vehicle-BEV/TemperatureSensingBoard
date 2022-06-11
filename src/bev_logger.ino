@@ -1,9 +1,26 @@
+/**
+ * $$$$$$$\  $$$$$$$$\ $$\    $$\ 
+ * $$  __$$\ $$  _____|$$ |   $$ |
+ * $$ |  $$ |$$ |      $$ |   $$ |
+ * $$$$$$$\ |$$$$$\    \$$\  $$  |
+ * $$  __$$\ $$  __|    \$$\$$  / 
+ * $$ |  $$ |$$ |        \$$$  /  
+ * $$$$$$$  |$$$$$$$$\    \$  /   
+ * \_______/ \________|    \_/    
+ *
+ * @name bev_logger.ino
+ *                              
+ * @author Marshal
+ * 
+ * Logger API, able to log to Serial, SD Card, and I2C device
+ *
+ */
+
 #include "bev_logger.h"
 #include "bev_can.h"
 #include "bev_i2c.h"
 
-// https://github.com/thijse/Arduino-Log
-
+/* TODO: Needs to be a compiler argument */
 Bev_Logger Log((uint8_t)(LOGGER_SERIAL_MODE));
 
 Bev_Logger::Bev_Logger(uint8_t _log_mode) : log_mode(_log_mode)  { }
@@ -69,14 +86,14 @@ void Bev_Logger::print(const CAN_message_t &msg) {
     }
     if (log_mode & LOGGER_SERIAL_MODE) {
         char buffer[100];
-        can_2_str(msg, buffer, 100);
+        CAN2Str(msg, buffer, 100);
         Serial.println(buffer);
     }
 }
 
 bool log_2_display(const char* dataString) 
 {
-    if (!check_display_online()) {
+    if (!CheckDisplayOnline()) {
         return false;
     }
 
@@ -96,7 +113,7 @@ bool log_2_display(const CAN_message_t &msg)
 //    }
 
     char buffer[100];
-    can_2_str(msg, buffer, 100);
+    CAN2Str(msg, buffer, 100);
     // display_write(CAN_LOG_ADDR, buffer);
 
     return true;
@@ -132,7 +149,7 @@ bool log_2_sd(const CAN_message_t &msg, const char* fname){
 	}
 
     char buffer[100];
-    can_2_str(msg, buffer, 100);
+    CAN2Str(msg, buffer, 100);
 
 	// open the file
 	File dataFile = SD.open(fname, FILE_WRITE);

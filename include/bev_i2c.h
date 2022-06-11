@@ -6,11 +6,6 @@
 #include <i2c_driver_wire.h>
 
 /*
- * I2C Library Used
- * https://github.com/Richard-Gemmell/teensy4_i2c
- */
-
-/*
 0x0B - speed (in kph)
 0x0C - battery temp (in degree C)
 0x0D - range left in distance (in km)
@@ -31,10 +26,10 @@
 #define UPDATE_DISPLAY_DIST 0x43
 #define UPDATE_DISPLAY_TIME 0x44
 
-extern bool displayOnline;
+// Function Prototypes
 
-void display_write(int addr, const char *string);
-void update_display();
-bool check_display_online();
+void DisplayWrite(int addr, const char *string);
+void UpdateDisplay();
+bool CheckDisplayOnline();
 
 #endif // BEV_I2C_H

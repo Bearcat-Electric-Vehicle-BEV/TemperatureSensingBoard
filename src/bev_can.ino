@@ -1,9 +1,47 @@
+/**
+ * $$$$$$$\  $$$$$$$$\ $$\    $$\ 
+ * $$  __$$\ $$  _____|$$ |   $$ |
+ * $$ |  $$ |$$ |      $$ |   $$ |
+ * $$$$$$$\ |$$$$$\    \$$\  $$  |
+ * $$  __$$\ $$  __|    \$$\$$  / 
+ * $$ |  $$ |$$ |        \$$$  /  
+ * $$$$$$$  |$$$$$$$$\    \$  /   
+ * \_______/ \________|    \_/    
+ *
+ * @name bev_can.ino
+ *                              
+ * @author Marshal Stewart
+ * 
+ * APIs for interacting with CAN bus and the devices on it.
+ * 
+ * @lib https://github.com/tonton81/FlexCAN_T4 
+ *
+ */
+
+
 #include "bev_can.h"
 #include "bev_logger.h"
 
+/**
+ * CAN Bus Object, Can0
+ * 
+ * Object is an instance of CAN1 on the Teensy Pinout. Object needs 
+ * initialized via CANInit(), this will set baudrate, mailbox filters, 
+ * callbacks, and enabled mailboxes. 
+ */
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-CAN_message_t cmdMsg;
 
+/**
+ * Motor Controller CAN parameters
+ * 
+ * All possible CAN msgs that the motor controller can broadcast. During 
+ * production, majority of these will go unused.
+ * 
+ * TODO: #define guards, once compiler args file is planned
+ * 
+ * TODO: Write Python script to auto generate these parameters
+ * 
+ */
 uint16_t ModuleATemperature=0, ModuleBTemperature=0, ModuleCTemperature=0, GateDriverBoardTemperature=0;
 uint16_t ControlBoardTemperature=0, RTD1Temperature=0, RTD2Temperature=0, RTD3Temperature=0;
 uint16_t RTD4Temperature=0, RTD5Temperature=0, MotorTemperature=0, TorqueShudder=0;
@@ -27,33 +65,109 @@ uint16_t vq_cmd=0, vd_cmd=0, vqs_cmd=0;
 uint16_t voltage12_pwmfreq=0, run_faults_lo=0, run_faults_hi=0;
 uint8_t Diagnostic_Index, Diagnostic_SubIndex, Record_0, Record_1, Record_2, Record_3, Record_4, Record_5;
 
+/**
+ * Orion BMS 2 CAN Messages
+ * 
+ * CAN msgs that the BMS can broadcast. These aren't static and defined from
+ * the Orion BMS GUI. These should be in sync with the OrionBMS2.dbc file
+ * 
+ * TODO: Python script to autogenerate these parameters
+ */
 unsigned SOC, DCL, CCL, InternalTemperature, HighestCellVoltage, PackCurrent, AverageTemperature, CheckSum;
 uint32_t bms_faults[3];
 
-bool faultPersistant = false;
+/**
+ * PM100DX Command Heartbeat Message, CmdMsg
+ * 
+ * CAN message sent to Motor Controller at least every half second. Populated
+ * by numerous functions and tasks. 
+ * 
+ * The other variables are the globals that are used to populate the CAN message.
+ */
+CAN_message_t CmdMsg;
 
-// RMS Command Parameters 
-int TorqueCommand = 0;
-int SpeedCommand = 0;
-int Direction = 1;
-int InverterEnabled = 0;
-int Duration = 0;
+uint8_t TorqueCommand = 0;
+uint8_t SpeedCommand = 0;
+uint8_t Direction = 1;
+uint8_t InverterEnabled = 0;
+uint8_t Duration = 0;
 
-bool checkFaultCodes() {
+/**
+ * CANInit
+ * 
+ * @param void
+ * 
+ * @return void
+ * 
+ * Initializes CAN bus, mailboxes, filters. Should be called before attempting to use Can0
+ * 
+ * @todo #define guards for what messages are being used
+ * 
+ * @todo What is a fail condition
+ * 
+ */
+void CANInit(){
+    Can0.begin();
+    Can0.setBaudRate(250000);
+    Can0.setMaxMB(16);
+
+    Can0.setMB(MB0, RX, STD);
+    Can0.setMB(MB1, RX, STD);
+    Can0.setMB(MB2, RX, STD);
+    Can0.setMB(MB3, RX, STD);
+    Can0.setMB(MB4, RX, STD);
+    
+    Can0.setMBFilter(REJECT_ALL);
+    Can0.setMBFilter(MB0, RMS_TEMPERATURES_3);
+    Can0.setMBFilter(MB1, RMS_MOTOR_POSITION_INFO);
+    Can0.setMBFilter(MB2, RMS_FAULT_CODES);
+    Can0.setMBFilter(MB3, RMS_TORQUE_AND_TIMER_INFORMATION);
+    Can0.setMBFilter(MB4, RMS_DIAGNOSTIC_DATA);
+
+    Can0.onReceive(MB0,CanSniff);
+    Can0.onReceive(MB1,CanSniff);
+    Can0.onReceive(MB2,CanSniff);
+
+    Can0.setMBUserFilter(MB0,0x00,0xFF);
+    Can0.setMBUserFilter(MB1,0x03,0xFF);
+    Can0.setMBUserFilter(MB2,0x0B,0xFF);
+
+    Can0.mailboxStatus();
+
+    // Setup Command Message, static msgs members, set once
+    CmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
+    CmdMsg.flags.extended = 0;
+    CmdMsg.len = 8;
+}
+
+/**
+ * CheckFautCodes
+ * 
+ * @param void
+ * 
+ * @return True/Fault, False/No Fault
+ * 
+ * Checks whether a fault code has been asserted on either the Motor Controller
+ * or the BMS. Returns True if there is a fault, false if no fault.
+ * 
+ * @todo The faultPersistant thing straight up doesn't work, also should use the header system
+ * 
+ */
+bool CheckFaultCodes() {
 
     // Motor Controller 
     for (uint8_t i=0; i<16; i++) {
         if ((POSTFaultLo & (1 << i)) || (POSTFaultHi & (1 << i)) ||
             (RunFaultLo & (1 << i)) || (RunFaultHi & (1 << i))) 
         {
-            return (faultPersistant = true);
+            return (true);
         }
     }
     
     // BMS
     for (uint8_t i=0; i<sizeof(bms_faults)/sizeof(uint32_t); i++) {
         if (bms_faults[i]) {
-            return (faultPersistant = true);
+            return (true);
         }
     }
 
@@ -62,11 +176,25 @@ bool checkFaultCodes() {
 
 }
 
-
-void sendMessage(unsigned id, unsigned *buffer, unsigned len) {
+/**
+ * SendMessage
+ * 
+ * @param id                CAN message ID
+ * @param buffer            Buffer to create message from
+ * @param len               Length of Buffer (DLC)
+ * 
+ * @return True/Success, False/Failed
+ * 
+ * Constructs a CAN msg from parameters and attempts to write to CAN bus. Fails
+ * if the user provides an invalid parameter.
+ * 
+ * TODO: The faultPersistant thing straight up doesn't work, also should use the header system
+ * 
+ */
+bool SendMessage(unsigned id, unsigned *buffer, unsigned len) {
 
     if (buffer == nullptr)
-        return;
+        return false;
     
     CAN_message_t msg;
     msg.id = id;
@@ -78,117 +206,147 @@ void sendMessage(unsigned id, unsigned *buffer, unsigned len) {
 
     Can0.write(msg);
 
-//    Log.info(msg);
+    return true;
+
 }
 
-/*
- * sendInverterEnable
- *
+/**
+ * SendInverterEnable
+ * 
+ * @param void
+ * 
+ * @return void
+ * 
+ * Sends enable CAN message to the Motor Controller.
+ * 
  * Before the inverter can be ran, must send a disable command.
  * For more information see Section 2.2.1 Inverter Enable Safety Options
  * of the RMS CAN Protocol Document
+ * 
  */
+void SendInverterEnable() {
 
-void sendInverterEnable() {
-    cmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
-    cmdMsg.flags.extended = 0;
-    cmdMsg.len = 8;
+    // Set in CANInit, small optimization
+    // CmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
+    // CmdMsg.flags.extended = 0;
+    // CmdMsg.len = 8;
 
-    cmdMsg.buf[0] = 0; 
-    cmdMsg.buf[1] = 0; 
-    cmdMsg.buf[2] = 0; 
-    cmdMsg.buf[3] = 0;
-    cmdMsg.buf[4] = 1; 
-    cmdMsg.buf[5] = 0; 
-    cmdMsg.buf[6] = 0; 
-    cmdMsg.buf[7] = 0;
+    for (unsigned i=0; i<8; i++){
+        CmdMsg.buf[i] = 0;
+    }
 
-    Can0.write(cmdMsg);
+    CmdMsg.buf[4] = 1;
 
-//    Log.info(cmdMsg);
+    Can0.write(CmdMsg);
+
 }
 
-void sendInverterDisable() {
-    cmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
-    cmdMsg.flags.extended = 0;
-    cmdMsg.len = 8;
+/**
+ * SendInverterDisable
+ * 
+ * @param void
+ * 
+ * @return void
+ * 
+ * Sends enable CAN message to the Motor Controller.
+ * 
+ * Before the inverter can be ran, must send a disable command.
+ * For more information see Section 2.2.1 Inverter Enable Safety Options
+ * of the RMS CAN Protocol Document
+ * 
+ */
+void SendInverterDisable() {
 
-    cmdMsg.buf[0] = 0; 
-    cmdMsg.buf[1] = 0; 
-    cmdMsg.buf[2] = 0; 
-    cmdMsg.buf[3] = 0;
-    cmdMsg.buf[4] = 0; 
-    cmdMsg.buf[5] = 0; 
-    cmdMsg.buf[6] = 0; 
-    cmdMsg.buf[7] = 0;
+    // Set in CANInit, small optimization
+    // CmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
+    // CmdMsg.flags.extended = 0;
+    // CmdMsg.len = 8;
 
-    Can0.write(cmdMsg);
+    for (unsigned i=0; i<8; i++){
+        CmdMsg.buf[i] = 0;
+    }
 
-//    Log.info(cmdMsg);
+    Can0.write(CmdMsg);
 }
-/*
- * sendRMSHeartbeat
- *
- * Populates CAN_message_t cmdMsg, then writes on Can0. For more information
+
+/**
+ * SendRMSHeartBeat
+ * 
+ * @param void
+ * 
+ * @return void
+ * 
+ * Callback function for task to send heartbeat to motor controller
+ * 
+ * Populates CAN_message_t CmdMsg, then writes on Can0. For more information
  * on the CAN Command Message for the RMS see Section 2.2 Command Message in
  * the RMS CAN Protocol document. 
- *
+ * 
  */
-void sendRMSHeartbeat(){
+void SendRMSHeartBeat(){
 
-    cmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
-    cmdMsg.flags.extended = 0;
-    cmdMsg.len = 8;
+    // Set in CANInit, small optimization
+    // CmdMsg.id = RMS_COMMAND_MESSGE_ADDR;
+    // CmdMsg.flags.extended = 0;
+    // CmdMsg.len = 8;
 
-    // Construct msg
-    cmdMsg.buf[0] = (TorqueCommand * 10) % 256;
-    cmdMsg.buf[1] = int(TorqueCommand * 10 / 256);
-    cmdMsg.buf[2] = SpeedCommand % 256;
-    cmdMsg.buf[3] = int(SpeedCommand / 256);
-    cmdMsg.buf[4] = Direction;
-    cmdMsg.buf[5] = int(InverterEnabled);
-    cmdMsg.buf[6] = 0;
-    cmdMsg.buf[7] = 0;
+    CmdMsg.buf[0] = (TorqueCommand * 10) % 256;
+    CmdMsg.buf[1] = int(TorqueCommand * 10 / 256);
+    CmdMsg.buf[2] = SpeedCommand % 256;
+    CmdMsg.buf[3] = int(SpeedCommand / 256);
+    CmdMsg.buf[4] = Direction;
+    CmdMsg.buf[5] = int(InverterEnabled);
+    CmdMsg.buf[6] = 0;
+    CmdMsg.buf[7] = 0;
     
-    Can0.write(cmdMsg);
-
-//    Log.info(cmdMsg);
+    Can0.write(CmdMsg);
 
 }
 
-void send_clear_faults() {
-
-    cmdMsg.id = RMS_PARAMETER_MSG1;
-    cmdMsg.flags.extended = 0;
-    cmdMsg.len = 8;
-
-    cmdMsg.buf[0] = 20; 
-    cmdMsg.buf[1] = 0; 
-    cmdMsg.buf[2] = 1; 
-    cmdMsg.buf[3] = 0;
-    cmdMsg.buf[4] = 0; 
-    cmdMsg.buf[5] = 0; 
-    cmdMsg.buf[6] = 0; 
-    cmdMsg.buf[7] = 0;
-
-    Can0.write(cmdMsg);
-
-//    Log.info(cmdMsg);
-
-
-
-}
-
-
-
-
-
-/*
- * canSniff
- *
- * Callback function that assigns incoming signals to globals 
+/**
+ * SendClearFaults
+ * 
+ * @param void
+ * 
+ * @return void
+ * 
+ * Callback function for task to send heartbeat to motor controller
+ * 
+ * Populates CAN_message_t CmdMsg, then writes on Can0. For more information
+ * on the CAN Command Message for the RMS see Section 2.2 Command Message in
+ * the RMS CAN Protocol document. 
+ * 
  */
-void canSniff(const CAN_message_t &msg){
+void SendClearFaults() {
+
+    CmdMsg.id = RMS_PARAMETER_MSG1;
+    CmdMsg.flags.extended = 0;
+    CmdMsg.len = 8;
+
+    CmdMsg.buf[0] = 20; 
+    CmdMsg.buf[1] = 0; 
+    CmdMsg.buf[2] = 1; 
+    CmdMsg.buf[3] = 0;
+    CmdMsg.buf[4] = 0; 
+    CmdMsg.buf[5] = 0; 
+    CmdMsg.buf[6] = 0; 
+    CmdMsg.buf[7] = 0;
+
+    Can0.write(CmdMsg);
+
+}
+
+/**
+ * CanSniff
+ * 
+ * @param msg       CAN Message Object, passed by reference
+ * 
+ * @return void
+ * 
+ * Callback function that assigns incoming signals to globals
+ * 
+ */
+void CanSniff(const CAN_message_t &msg){
 
 //    Log.info(msg);
 
@@ -378,11 +536,21 @@ void canSniff(const CAN_message_t &msg){
 
 }
 
-void dump_fault_codes() {
+/**
+ * DumpFaultCodes
+ * 
+ * @param void
+ * 
+ * @return void
+ * 
+ * Callback function that assigns incoming signals to globals
+ * 
+ */
+void DumpFaultCodes() {
     char buffer[200];
     snprintf(buffer, 200, 
     "POSTFaultLo:%d,POSTFaultHi:%d,RunFaultLo:%d,RunFaultHi:%d"
-    "DTC_Status_1:%d,DTC_Status_2:%d,Failsafe_Statuses:%d",
+    "DTC_Status_1:%lu,DTC_Status_2:%lu,Failsafe_Statuses:%lu",
     POSTFaultLo,POSTFaultHi,RunFaultLo, RunFaultHi,
     bms_faults[0],bms_faults[1],bms_faults[2]);
 
@@ -390,15 +558,33 @@ void dump_fault_codes() {
 
 }
 
-void can_2_str(const CAN_message_t &msg, char *buffer, size_t len) {
+/**
+ * CAN2Str
+ * 
+ * @param msg           CAN Message to be casted
+ * @param buffer        Buffer that will be written to
+ * @param len           Buffer len (not DLC)
+ * 
+ * @return void
+ * 
+ * Breaks down CAN message and writes to buffer in CAN King format
+ * 
+ * TODO: make CAN king format, so we can use parsing tools
+ * 
+ */
+void CAN2Str(const CAN_message_t &msg, char *buffer, size_t len) {
 
-    snprintf(buffer, len, "MB:%d OVERRUN:%d LEN:%d EXT:%d TS:%05d ID:%04X BUFFER: ", 
+    snprintf(buffer, len, "MB:%d OVERRUN:%d LEN:%d EXT:%d TS:%05d ID:%04lX BUFFER: ", 
               msg.mb, msg.flags.overrun, msg.len, msg.flags.extended, 
               msg.timestamp, msg.id);
     
+    /* Adding char '0' to numeric returns ascii value */
+    char tmpBuf[msg.len] = {0};
     for ( uint8_t i = 0; i < msg.len; i++ ) {
-        snprintf(buffer, len, "%s%X ", buffer, msg.buf[i]);
+        tmpBuf[i] = msg.buf[i] + '0';
     }
-    snprintf(buffer, len, "%s", buffer);
+
+    /* Append to buffer */
+    strncat(buffer, tmpBuf, msg.len);
 
 }

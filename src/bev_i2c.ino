@@ -1,20 +1,84 @@
+/**
+ * $$$$$$$\  $$$$$$$$\ $$\    $$\ 
+ * $$  __$$\ $$  _____|$$ |   $$ |
+ * $$ |  $$ |$$ |      $$ |   $$ |
+ * $$$$$$$\ |$$$$$\    \$$\  $$  |
+ * $$  __$$\ $$  __|    \$$\$$  / 
+ * $$ |  $$ |$$ |        \$$$  /  
+ * $$$$$$$  |$$$$$$$$\    \$  /   
+ * \_______/ \________|    \_/    
+ *
+ * @name bev_i2c.ino
+ *                              
+ * @author Marshal Stewart
+ * 
+ * APIs for interacting with I2C Bus
+ * 
+ * @lib https://github.com/Richard-Gemmell/teensy4_i2c
+ *
+ */
+
 #include "bev_i2c.h"
 #include "bev_can.h"
 
-bool displayOnline = true;
+static bool DisplayOnline = true;
 
-void display_write(int addr, const char *string) {
-    Wire.beginTransmission(addr);
+/**
+ * DisplayWrite
+ * 
+ * @author Marshal
+ * 
+ * @param addr      Slave I2C Address to write to
+ * @param buffer    Buffer to write to Slave Address
+ * 
+ * @return True/Success, False/Fail
+ * If the passed buffer is NULL, will return False.
+ * 
+ * @brief
+ * Begins transmission with I2C Slave at addr, writes buffer, then ends
+ * transmission.
+ * 
+ * It's very possible for the write to fail, this is due to the I2C lib,
+ * most common occurances are that the transaction gets interrupted by another 
+ * task, the display doesn't send ACK bit (Pyportal code possibly bad), or 
+ * bad connection and/or noise present.
+ * 
+ */
+bool DisplayWrite(unsigned addr, const char *buffer) {
 
-    if (string == NULL) {
-      return;
+    if (buffer == NULL) {
+      return false;
     }
-
+ 
+    Wire.beginTransmission(addr);
     Wire.write(MotorSpeed);
     Wire.endTransmission();
+
+    return true;
 }
 
-void update_display() {
+/**
+ * DisplayWrite
+ * 
+ * @author Marshal
+ * 
+ * @param addr      Slave I2C Address to write to
+ * @param buffer    Buffer to write to Slave Address
+ * 
+ * @return True/Success, False/Fail
+ * If the passed buffer is NULL, will return False.
+ * 
+ * @brief
+ * Begins transmission with I2C Slave at addr, writes buffer, then ends
+ * transmission.
+ * 
+ * It's very possible for the write to fail, this is due to the I2C lib,
+ * most common occurances are that the transaction gets interrupted by another 
+ * task, the display doesn't send ACK bit (Pyportal code possibly bad), or 
+ * bad connection and/or noise present.
+ * 
+ */
+void UpdateDisplay() {
     Wire.beginTransmission(UPDATE_DISPLAY_SPEED);
     Wire.write(TorqueFeedback);
     Wire.endTransmission();
@@ -28,19 +92,33 @@ void update_display() {
     delay(10);
 }
 
-/*
- * find_address
- * finds address of devices on I2C bus and prints to Serial
- * https://github.com/Richard-Gemmell/teensy4_i2c/blob/master/examples/wire/find_slaves/find_slaves.ino
+
+/**
+ * CheckDisplayOnline
+ * 
+ * @author Marshal
+ * 
+ * @param void
+ * 
+ * @return True/Online, False/Offline
+ * 
+ * @see <a href="https://github.com/Richard-Gemmell/teensy4_i2c/blob/master/examples/wire/find_slaves/find_slaves.ino"></a>
+ * 
+ * @brief
+ * Checks whether Pyportal Titano Display is listening and responsive on the 
+ * I2C bus. Does this by starting an empty transmission. The Wire lib is waiting
+ * for a ACK bit, once recieved will end transmission. Note that if the display 
+ * wasn't online when this function is first called, then will only return false.
+ * 
  */
-bool check_display_online(){
+bool CheckDisplayOnline(){
   
-    if (displayOnline) {
+    if (DisplayOnline) {
         Wire.beginTransmission(0x40);
         if (Wire.endTransmission() != 0) {
-            displayOnline = false;
+            DisplayOnline = false;
         }
     }
     
-    return displayOnline;
+    return DisplayOnline;
 }
