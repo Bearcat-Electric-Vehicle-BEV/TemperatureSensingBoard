@@ -15,8 +15,6 @@
 
 // Global CAN Bus and Command Message, and Command Parameters
 
-extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-
 extern bev_dbc_rx_t DBCParser;
 
 /**
@@ -43,7 +41,6 @@ void SendInverterDisable();
 void SendInverterEnable();
 void SendCommandMessage(CmdParameters_t *cmd);
 void CanSniff(const CAN_message_t &msg);
-void CAN2Str(const CAN_message_t &msg, char *buffer, size_t len);
 
 
 #endif // BEV_CAN_H

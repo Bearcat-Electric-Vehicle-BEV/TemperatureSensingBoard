@@ -41,7 +41,8 @@ void vApplicationIdleHook(void)
 
 void setup() {
 
-  Serial.begin(115200); delay(400);
+  // Serial.begin(115200); 
+  delay(400);
   ChangeState(INIT);
 
   // Set Pin Modes

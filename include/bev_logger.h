@@ -6,10 +6,6 @@
 
 #include "bev_can.h"
 
-#define LOGGER_DISPLAY_MODE 1
-#define LOGGER_SD_MODE 2
-#define LOGGER_SERIAL_MODE 4
-
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
 
@@ -29,22 +25,21 @@ static const char *LEVEL_STRING[] = {
 
 class Bev_Logger {
 public:
-    uint8_t log_mode;
-    
-	Bev_Logger(uint8_t _log_mode);
+	Bev_Logger();
     void info(const char *string);
     void error(const char *string);
     void warning(const char *string);
     void critical(const char *string);
     void can(const CAN_message_t &msg);
+private:
     void print(LogLevel level, const char *string);
     void print(const CAN_message_t &msg);
 };
 
 extern Bev_Logger Log;
 
-bool log_2_display(const char* dataString);
-bool log_2_sd(const char* dataString, const char* fname);
+void WriteToSD(const char* dataString, const char* fname);
+void WriteToSD(const CAN_message_t &msg, const char* fname);
 
 
 #endif // BEV_LOGGER_H

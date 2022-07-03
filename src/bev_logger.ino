@@ -1,29 +1,31 @@
 /**
- * $$$$$$$\  $$$$$$$$\ $$\    $$\ 
+ * @file bev_logger.ino
+ * @author Marshal Stewart (stewa2m3@mail.uc.edu)
+ * @brief 
+ * @version v1.1
+ * @date 2022-07-03
+ * 
+ * Logger API, able to log to Serial, SD Card, and I2C device
+ *  
+ * $$$$$$$\  $$$$$$$$\ $$\    $$\
  * $$  __$$\ $$  _____|$$ |   $$ |
  * $$ |  $$ |$$ |      $$ |   $$ |
  * $$$$$$$\ |$$$$$\    \$$\  $$  |
- * $$  __$$\ $$  __|    \$$\$$  / 
- * $$ |  $$ |$$ |        \$$$  /  
+ * $$  __$$\ $$  __|    \$$\$$  /
+ * $$ |  $$ |$$ |        \$$$  /
  * $$$$$$$  |$$$$$$$$\    \$  /   
  * \_______/ \________|    \_/    
- *
- * @name bev_logger.ino
- *                              
- * @author Marshal
+ * Copyright University of Cincinnati 2022
  * 
- * Logger API, able to log to Serial, SD Card, and I2C device
- *
  */
 
 #include "bev_logger.h"
 #include "bev_can.h"
 #include "bev_i2c.h"
 
-/* TODO: Needs to be a compiler argument */
-Bev_Logger Log((uint8_t)(LOGGER_SERIAL_MODE));
+Bev_Logger Log;
 
-Bev_Logger::Bev_Logger(uint8_t _log_mode) : log_mode(_log_mode)  { }
+Bev_Logger::Bev_Logger() {}
 
 void Bev_Logger::can(const CAN_message_t &msg) {
     print(msg);
@@ -42,80 +44,42 @@ void Bev_Logger::critical(const char* string) {
 }
 
 void Bev_Logger::print(LogLevel level, const char *string) {
+    static char buffer[100];
     
-    char buffer[100];
     snprintf(buffer, 100, "%s:%s", LEVEL_STRING[level], string);
-    
-    if (log_mode & LOGGER_DISPLAY_MODE) {
-      if (!log_2_display(buffer)) {
-          // TODO: need something
-      }
-    }
-    if (log_mode & LOGGER_SD_MODE) {
-      if (!log_2_sd(buffer, "EVENT.log")) {
-          // TODO: need something
-      }
-    }
-    if (log_mode & LOGGER_SERIAL_MODE) {
-        Serial.println(buffer);
-    }
+    WriteToSD(buffer, "EVENT.log");
     
 }
 
 void Bev_Logger::print(const CAN_message_t &msg) {
+    WriteToSD(msg, "CAN.log");
+}
+
+/** @todo CAN King Format */
+void CAN2Str(const CAN_message_t &msg, char *buffer, size_t len) {
+
+    snprintf(buffer, len, "MB:%d OVERRUN:%d LEN:%d EXT:%d TS:%05d ID:%04lX BUFFER: ", 
+              msg.mb, msg.flags.overrun, msg.len, msg.flags.extended, 
+              msg.timestamp, msg.id);
     
-    if (log_mode & LOGGER_DISPLAY_MODE) {
-      if (!log_2_display(msg)) {
-          // TODO: need something
-      }
+    /* Adding char '0' to numeric returns ascii value */
+    char tmpBuf[msg.len] = {0};
+    for ( uint8_t i = 0; i < msg.len; i++ ) {
+        tmpBuf[i] = msg.buf[i] + '0';
     }
-    if (log_mode & LOGGER_SD_MODE) {
-      if (!log_2_sd(msg, "CAN.log")) {
-          // TODO: need something
-      }
-    }
-    if (log_mode & LOGGER_SERIAL_MODE) {
-        char buffer[100];
-        CAN2Str(msg, buffer, 100);
-        Serial.println(buffer);
-    }
+
+    /* Append to buffer */
+    strncat(buffer, tmpBuf, msg.len);
+
 }
 
-bool log_2_display(const char* dataString) 
-{
-    if (!CheckDisplayOnline()) {
-        return false;
-    }
-
-    if (dataString == NULL) {
-        return false;
-    }
-
-    // display_write(EVENT_LOG_ADDR, dataString);
-
-    return true;
-}
-
-bool log_2_display(const CAN_message_t &msg) 
-{
-//    if (!check_display_online()) {
-//        return false;
-//    }
-
-    char buffer[100];
-    CAN2Str(msg, buffer, 100);
-    // display_write(CAN_LOG_ADDR, buffer);
-
-    return true;
-}
-
-bool log_2_sd(const char* dataString, const char* fname){
+void WriteToSD(const char* dataString, const char* fname){
 	if (!SD.begin(BUILTIN_SDCARD)) {
-      return false;
-	}
+        return;
+    }
 
     if (dataString == NULL || fname == NULL) {
-        return false;
+        return;
     }
 
 	// open the file
@@ -125,20 +89,16 @@ bool log_2_sd(const char* dataString, const char* fname){
       dataFile.println(dataString);
       dataFile.close();
     }
-    else {
-      return false;
-    }
-    // delay(100);
 
-	return true;
 }
 
-bool log_2_sd(const CAN_message_t &msg, const char* fname){
-	if (!SD.begin(BUILTIN_SDCARD)) {
-      return false;
+void WriteToSD(const CAN_message_t &msg, const char* fname){
+    static char buffer[100];
+	
+    if (!SD.begin(BUILTIN_SDCARD)) {
+      return;
 	}
 
-    char buffer[100];
     CAN2Str(msg, buffer, 100);
 
 	// open the file
@@ -148,10 +108,6 @@ bool log_2_sd(const CAN_message_t &msg, const char* fname){
       dataFile.println(buffer);
       dataFile.close();
     }
-    else {
-      return false;
-    }
-    // delay(100);
 
-	return true;
 }
+

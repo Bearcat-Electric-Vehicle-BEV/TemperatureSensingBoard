@@ -1,23 +1,22 @@
 /**
- * $$$$$$$\  $$$$$$$$\ $$\    $$\ 
+ * @file bev_can.ino
+ * @author Marshal Stewart (stewa2m3@mail.uc.edu)
+ * @brief 
+ * @version v1.1
+ * @date 2022-07-03
+ * @link https://github.com/tonton81/FlexCAN_T4 
+ *
+ * $$$$$$$\  $$$$$$$$\ $$\    $$\
  * $$  __$$\ $$  _____|$$ |   $$ |
  * $$ |  $$ |$$ |      $$ |   $$ |
  * $$$$$$$\ |$$$$$\    \$$\  $$  |
- * $$  __$$\ $$  __|    \$$\$$  / 
- * $$ |  $$ |$$ |        \$$$  /  
+ * $$  __$$\ $$  __|    \$$\$$  /
+ * $$ |  $$ |$$ |        \$$$  /
  * $$$$$$$  |$$$$$$$$\    \$  /   
  * \_______/ \________|    \_/    
- *
- * @name bev_can.ino
- *                              
- * @author Marshal Stewart
+ * Copyright University of Cincinnati 2022
  * 
- * APIs for interacting with CAN bus and the devices on it.
- * 
- * @lib https://github.com/tonton81/FlexCAN_T4 
- *
  */
-
 
 #include "bev_can.h"
 #include "bev_logger.h"
@@ -26,13 +25,10 @@
 #include "bev_dbc.h"
 #include "bev_dbc-binutil.h"
 
-
-/** @todo make volatile ? */
 static FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 
 /** @todo make static */
 bev_dbc_rx_t DBCParser;
-
 
 void ServiceCANIdle()
 {
@@ -197,33 +193,3 @@ void CanSniff(const CAN_message_t &msg){
 
 }
 
-/**
- * CAN2Str
- * 
- * @param msg           CAN Message to be casted
- * @param buffer        Buffer that will be written to
- * @param len           Buffer len (not DLC)
- * 
- * @return void
- * 
- * Breaks down CAN message and writes to buffer in CAN King format
- * 
- * TODO: make CAN king format, so we can use parsing tools
- * 
- */
-void CAN2Str(const CAN_message_t &msg, char *buffer, size_t len) {
-
-    snprintf(buffer, len, "MB:%d OVERRUN:%d LEN:%d EXT:%d TS:%05d ID:%04lX BUFFER: ", 
-              msg.mb, msg.flags.overrun, msg.len, msg.flags.extended, 
-              msg.timestamp, msg.id);
-    
-    /* Adding char '0' to numeric returns ascii value */
-    char tmpBuf[msg.len] = {0};
-    for ( uint8_t i = 0; i < msg.len; i++ ) {
-        tmpBuf[i] = msg.buf[i] + '0';
-    }
-
-    /* Append to buffer */
-    strncat(buffer, tmpBuf, msg.len);
-
-}
