@@ -25,19 +25,9 @@ Bev_Logger Log((uint8_t)(LOGGER_SERIAL_MODE));
 
 Bev_Logger::Bev_Logger(uint8_t _log_mode) : log_mode(_log_mode)  { }
 
-void Bev_Logger::info(const CAN_message_t &msg) {
+void Bev_Logger::can(const CAN_message_t &msg) {
     print(msg);
 }
-void Bev_Logger::error(const CAN_message_t &msg) {
-    print(msg);
-}
-void Bev_Logger::warning(const CAN_message_t &msg) {
-    print(msg);
-}
-void Bev_Logger::critical(const CAN_message_t &msg) {
-    print(msg);
-}
-
 void Bev_Logger::info(const char* string) {
     print(INFO, string);
 }

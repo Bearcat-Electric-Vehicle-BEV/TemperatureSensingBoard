@@ -1,6 +1,16 @@
 #ifndef BEV_STATE_H
 #define BEV_STATE_H
 
+#include <FreeRTOS.h>
+#include <FreeRTOSConfig.h>
+#include <task.h> 
+
+/** @todo fill out with useful */
+
+#define OK 0
+#define FAIL -1
+
+typedef int code_t;
 
 /**
  * State Macros/Enums
@@ -22,26 +32,22 @@
         STATE(PRECHARGE_WAIT)  \
         STATE(READY_TO_GO_WAIT)  \
 
-enum ECUState{
+typedef enum {
     FOREACH_STATE(GENERATE_STATE_ENUM)
-};
+} ECUState_t;
 
 const char *STATE_STRING[] = {
     FOREACH_STATE(GENERATE_STATE_STRING)
 };
 
 extern const char *STATE_STRING[];
-extern ECUState currentState;
+extern volatile ECUState_t currentState;
 
+code_t ChangeState(ECUState_t newState);
+code_t ChangeState(ECUState_t newState, const char *reason);
+bool CheckState(ECUState_t vState);
 
-/* Function prototypes */
-
-void ChangeState(ECUState newState);
-void carInit();
-void carReset();
-void resetConfirm();
-void error();
-void routineCheck();
-void preHVCheck();
+extern TaskHandle_t pxStateMachineHandle;
+void vStateMachine(void * pvParameters);
 
 #endif // BEV_STATE_H

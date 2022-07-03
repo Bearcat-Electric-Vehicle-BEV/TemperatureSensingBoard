@@ -49,9 +49,11 @@ bool DisplayWrite(unsigned addr, const char *buffer) {
     if (buffer == NULL) {
       return false;
     }
- 
+
+    return true;
+
     Wire.beginTransmission(addr);
-    Wire.write(MotorSpeed);
+    // Wire.write(MotorSpeed);
     Wire.endTransmission();
 
     return true;
@@ -79,17 +81,7 @@ bool DisplayWrite(unsigned addr, const char *buffer) {
  * 
  */
 void UpdateDisplay() {
-    Wire.beginTransmission(UPDATE_DISPLAY_SPEED);
-    Wire.write(TorqueFeedback);
-    Wire.endTransmission();
-    delay(10);
     return;
-    Wire.write(MotorTemperature);
-    Wire.write(SOC);
-    Wire.write(96);
-    Wire.write(69);
-    Wire.endTransmission();
-    delay(10);
 }
 
 

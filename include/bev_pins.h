@@ -1,6 +1,8 @@
 #ifndef BEV_PINS_H
 #define BEV_PINS_H
 
+typedef uint8_t pin_t;
+
 #define PIN_VEHICLE_PWR 2
 #define PIN_Brake_Light 5
 #define PIN_ECU_OK 9
@@ -18,5 +20,7 @@
 #define PIN_SOC 39
 #define PIN_SPEAKER 37
 #define PIN_RESET 36
+#define PIN_FORWARD_SWITCH 28
+#define PIN_FORWARD_ENABLE 29
 
 #endif // BEV_PINS_H

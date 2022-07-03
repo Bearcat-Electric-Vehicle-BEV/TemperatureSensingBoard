@@ -36,10 +36,7 @@ public:
     void error(const char *string);
     void warning(const char *string);
     void critical(const char *string);
-    void info(const CAN_message_t &msg);
-    void error(const CAN_message_t &msg);
-    void warning(const CAN_message_t &msg);
-    void critical(const CAN_message_t &msg);
+    void can(const CAN_message_t &msg);
     void print(LogLevel level, const char *string);
     void print(const CAN_message_t &msg);
 };

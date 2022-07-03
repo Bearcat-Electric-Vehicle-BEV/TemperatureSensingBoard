@@ -50,6 +50,31 @@ BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
  SG_ Is_Pack_Balancing : 16|8@1+ (1,0) [0|0] "" Vector__XXX
  SG_ Time_Since_Power_On : 24|8@1+ (1,0) [0|0] "" Vector__XXX
  SG_ Time_Since_Faults_Cleared : 32|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ DTC_STATUS_RESERVED : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ P0A10 : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A0E : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A0C : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A0B : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A0A : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A09 : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A08 : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A07 : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A1F : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A12 : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A80 : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0AFA : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A04 : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0AC0 : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A0D : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A0F : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A02 : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A81 : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A9C : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ U0100 : 11|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0560 : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0AA6 : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A05 : 14|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ P0A06 : 15|1@1+ (1,0) [0|1] "" Vector__XXX
 
 BO_ 173 M173_Modulation_And_Flux_Info: 8 INV
  SG_ D4_Iq_Command : 48|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
@@ -225,33 +250,8 @@ BO_ 1713 BMS_Msg1: 8 Vector__XXX
  SG_ Checksum : 56|8@1+ (1,0) [0|0] "" Vector__XXX
 
 BO_ 1714 BMS_Faults1: 8 Vector__XXX
- SG_ P0A07 : 0|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A08 : 1|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A09 : 2|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A0A : 3|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A0B : 4|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A0C : 5|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A0E : 6|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A10 : 7|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ DTC_STATUS_RESERVED : 8|8@1+ (1,0) [0|0] "" Vector__XXX
-
-BO_ 1715 BMS_Faults2: 8 Vector__XXX
- SG_ P0A1F : 0|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A12 : 1|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A80 : 2|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0AFA : 3|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A04 : 4|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0AC0 : 5|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A0D : 6|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A0F : 7|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A02 : 8|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A81 : 9|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A9C : 10|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ U0100 : 11|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0560 : 12|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0AA6 : 13|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A05 : 14|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ P0A06 : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ DTCStatus1 : 0|16@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ DTCStatus2 : 16|16@1+ (1,0) [0|0] "" Vector__XXX
 
 
 
@@ -259,6 +259,30 @@ CM_ BU_ INV "The Cascadia Motion inverter";
 CM_ BU_ U2C "Delphi DC/DC Converter";
 CM_ BU_ VCU "The system vehicle control unit";
 CM_ BU_ BMS "BMS Master";
+CM_ SG_ 3221225472 P0A10 "Pack Too Hot Fault";
+CM_ SG_ 3221225472 P0A0E "Lowest Cell Voltage Too Low Fault";
+CM_ SG_ 3221225472 P0A0C "Highest Cell Voltage Too High Fault";
+CM_ SG_ 3221225472 P0A0B "Internal Software Fault";
+CM_ SG_ 3221225472 P0A0A "Internal Heatsink Thermistor Fault";
+CM_ SG_ 3221225472 P0A09 "Internal Hardware Fault";
+CM_ SG_ 3221225472 P0A08 "Charger Saftey Relay Fault";
+CM_ SG_ 3221225472 P0A07 "Discharge Limit Enforcement Fault";
+CM_ SG_ 3221225472 P0A1F "Internal Communication Fault";
+CM_ SG_ 3221225472 P0A12 "Cell Balancing Stuck Off Fault";
+CM_ SG_ 3221225472 P0A80 "Weak Cell Fault";
+CM_ SG_ 3221225472 P0AFA "Low Cell Voltage Fault";
+CM_ SG_ 3221225472 P0A04 "Open Wiring Fault";
+CM_ SG_ 3221225472 P0AC0 "Current Sensor Fault";
+CM_ SG_ 3221225472 P0A0D "Highest Cell Voltage Over 5V Fault";
+CM_ SG_ 3221225472 P0A0F "Cell ASIC Fault";
+CM_ SG_ 3221225472 P0A02 "Weak Pack Fault";
+CM_ SG_ 3221225472 P0A81 "Fan Monitor Fault";
+CM_ SG_ 3221225472 P0A9C "Thermistor Fault";
+CM_ SG_ 3221225472 U0100 "External Communication Fault";
+CM_ SG_ 3221225472 P0560 "Redundant Power Supply Fault";
+CM_ SG_ 3221225472 P0AA6 "High Voltage Isolation Fault";
+CM_ SG_ 3221225472 P0A05 "Input Power Supply Fault";
+CM_ SG_ 3221225472 P0A06 "Charge Limit Enforcement Fault";
 CM_ SG_ 173 D4_Iq_Command "The commanded Q-axis current";
 CM_ SG_ 173 D3_Id_Command "The commanded D-axis current";
 CM_ SG_ 173 D2_Flux_Weakening_Output "This is the current output of the flux regulator.";
@@ -372,31 +396,6 @@ CM_ SG_ 1713 SOC "Pack State of Charge";
 CM_ SG_ 1713 DCL "Pack Discharge Current Limit";
 CM_ SG_ 1713 CCL "Pack Charge Current Limit";
 CM_ BO_ 1714 "For all the values in the signals in the message, 1 signifies the signal or relay is enabled or active (high). 0 means inactive or off (low).";
-CM_ SG_ 1714 P0A07 "Discharge Limit Enforcement Fault";
-CM_ SG_ 1714 P0A08 "Charger Saftey Relay Fault";
-CM_ SG_ 1714 P0A09 "Internal Hardware Fault";
-CM_ SG_ 1714 P0A0A "Internal Heatsink Thermistor Fault";
-CM_ SG_ 1714 P0A0B "Internal Software Fault";
-CM_ SG_ 1714 P0A0C "Highest Cell Voltage Too High Fault";
-CM_ SG_ 1714 P0A0E "Lowest Cell Voltage Too Low Fault";
-CM_ SG_ 1714 P0A10 "Pack Too Hot Fault";
-CM_ BO_ 1715 "For all the values in the signals in the message, 1 signifies the signal or relay is enabled or active (high). 0 means inactive or off (low).";
-CM_ SG_ 1715 P0A1F "Internal Communication Fault";
-CM_ SG_ 1715 P0A12 "Cell Balancing Stuck Off Fault";
-CM_ SG_ 1715 P0A80 "Weak Cell Fault";
-CM_ SG_ 1715 P0AFA "Low Cell Voltage Fault";
-CM_ SG_ 1715 P0A04 "Open Wiring Fault";
-CM_ SG_ 1715 P0AC0 "Current Sensor Fault";
-CM_ SG_ 1715 P0A0D "Highest Cell Voltage Over 5V Fault";
-CM_ SG_ 1715 P0A0F "Cell ASIC Fault";
-CM_ SG_ 1715 P0A02 "Weak Pack Fault";
-CM_ SG_ 1715 P0A81 "Fan Monitor Fault";
-CM_ SG_ 1715 P0A9C "Thermistor Fault";
-CM_ SG_ 1715 U0100 "External Communication Fault";
-CM_ SG_ 1715 P0560 "Redundant Power Supply Fault";
-CM_ SG_ 1715 P0AA6 "High Voltage Isolation Fault";
-CM_ SG_ 1715 P0A05 "Input Power Supply Fault";
-CM_ SG_ 1715 P0A06 "Charge Limit Enforcement Fault";
 BA_DEF_ BO_  "GenMsgCycleTime" INT 0 100000;
 BA_DEF_  "BusType" STRING ;
 BA_DEF_DEF_  "GenMsgCycleTime" 0;

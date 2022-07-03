@@ -1,47 +1,58 @@
 #ifndef BEV_ETC_H
 #define BEV_ETC_H
 
-extern int ACCEL_MAXPOS;
-extern int ACCEL_MINPOS;
+#include "bev_pins.h"
+#include "bev_state.h"
 
-extern uint16_t accel_ped_1_pos;
-extern uint16_t accel_ped_2_pos;
-extern double accel_ped_pos; // This is the resultant value after verifying accel_1 and accel_2
-extern double brake_val;
-extern double deltaCurrent; // This is max DC current limit - current current
-extern double motorSpeed;
-extern double max_safe_torque; 
-extern double throttleSensitivityCurve[7];
-extern int throttleSensitivityCurve_N;
-extern double minAccInput;
-extern double maxAccInput;
-extern double currentDeltaNFCurve[5];
-extern int currentDeltaNFCurve_N;
-extern double currentDeltaCurve_inputMultiplier; // Needed to get polynomial coefficients to not be too small or big
-extern double minDeltaCurrentInput;
-extern double maxDeltaCurrentInput;
-extern double RPMNegativeFeedbackCurve[5];
-extern int RPMCurve_N;
-extern double RPMCurve_inputMultiplier; // Needed to get polynomial coefficients to not be too small or big
-extern double minRPMInput;
-extern double maxRPMInput;
-extern bool shouldSimulateETCInputs;
+#include <FreeRTOSConfig.h>
+#include <FreeRTOS.h>
+#include <task.h>
 
-// Function prototypes
-void EnableMotor();
-void ApplyPedalsAbsolute(int pedal_0);
-bool ValidatePedals(int pedal_0, int pedal_1);
-bool ValidateCurrentDrawn();
-void SimulateETCInputs();
-void ProcessInputParameters();
-void CapETCInputParameters();
-bool ETC();
-double EvaluatePolynomial(double poly[], int n, double x);
-double EvaluatePolynomial2(double poly[], int n, double x);
-double GetMax(double values[], int n);
-double CapBetweenZeroToOne(double value);
-double CapBetweenRange(double value, double lb, double ub);
-inline double Min(double val1, double val2);
-inline double Max(double val1, double val2);
+#define ACCEL_MAX 1023
+
+typedef uint16_t adc_t;
+typedef int16_t torque_t;
+	
+enum PedalSourceTypes {
+	DIGITAL 		= 0,
+	ANALOG_0V_3V	= 1,
+	ANALOG_3V_0V	= 2
+};
+
+/**
+ * @brief Class Abstracting Pedal Interaction
+ */
+class Pedal
+{
+public:
+
+    Pedal(pin_t pin, uint8_t src_type);
+	
+	adc_t ReadPedal(void);
+	float GetRatio(void);
+	uint32_t GetRatio_u32(void);
+	bool Applied(void);
+
+	float operator-(const Pedal &pedal);
+
+private:
+	/* pin number, prefers MACROS found in bev_pins.h */
+	pin_t pin;
+
+	/* Raw ADC tick reading (0-1023) */
+	adc_t pos;
+	
+	/* ADC tick converted to 0-100% pedal position */
+	float ratio;
+	
+	/* How the pin is interpreted Ex. digital or analog, 0-3.3V or 3.3-0V */
+	uint8_t src_type;
+
+};
+
+extern code_t EnableMotor(void);
+extern code_t ETC(Pedal *pedal_0, torque_t *request);
+extern TaskHandle_t pxETCTaskHandle;
+void vETCTask(void * pvParameters);
 
 #endif // BEV_ETC_H
