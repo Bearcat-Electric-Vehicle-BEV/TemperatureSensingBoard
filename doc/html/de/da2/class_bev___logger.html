@@ -66,54 +66,209 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="../../d4/dae/class_bev___logger-members.html">List of all members</a>  </div>
+<a href="#pri-methods">Private Member Functions</a>  </div>
   <div class="headertitle"><div class="title">Bev_Logger Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="../../d6/dc6/bev__logger_8h_source.html">bev_logger.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a87e044b93a15e17c4ee5ff4aef3c906b"><td class="memItemLeft" align="right" valign="top"><a id="a87e044b93a15e17c4ee5ff4aef3c906b" name="a87e044b93a15e17c4ee5ff4aef3c906b"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Bev_Logger</b> (uint8_t _log_mode)</td></tr>
-<tr class="separator:a87e044b93a15e17c4ee5ff4aef3c906b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeca86445ff38df385c3dc6b5a245695b"><td class="memItemLeft" align="right" valign="top"><a id="aeca86445ff38df385c3dc6b5a245695b" name="aeca86445ff38df385c3dc6b5a245695b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>info</b> (const char *string)</td></tr>
+<tr class="memitem:afdd25f68b84ace7100fc769a71f316b1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../de/da2/class_bev___logger.html#afdd25f68b84ace7100fc769a71f316b1">Bev_Logger</a> ()</td></tr>
+<tr class="separator:afdd25f68b84ace7100fc769a71f316b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeca86445ff38df385c3dc6b5a245695b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../de/da2/class_bev___logger.html#aeca86445ff38df385c3dc6b5a245695b">info</a> (const char *string)</td></tr>
 <tr class="separator:aeca86445ff38df385c3dc6b5a245695b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a780bd091cee291bd11c2cf178f5d47a6"><td class="memItemLeft" align="right" valign="top"><a id="a780bd091cee291bd11c2cf178f5d47a6" name="a780bd091cee291bd11c2cf178f5d47a6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>error</b> (const char *string)</td></tr>
+<tr class="memitem:a780bd091cee291bd11c2cf178f5d47a6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../de/da2/class_bev___logger.html#a780bd091cee291bd11c2cf178f5d47a6">error</a> (const char *string)</td></tr>
 <tr class="separator:a780bd091cee291bd11c2cf178f5d47a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ec58f829fe532534399a43e7f761566"><td class="memItemLeft" align="right" valign="top"><a id="a6ec58f829fe532534399a43e7f761566" name="a6ec58f829fe532534399a43e7f761566"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>warning</b> (const char *string)</td></tr>
+<tr class="memitem:a6ec58f829fe532534399a43e7f761566"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../de/da2/class_bev___logger.html#a6ec58f829fe532534399a43e7f761566">warning</a> (const char *string)</td></tr>
 <tr class="separator:a6ec58f829fe532534399a43e7f761566"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad192d15fbf1e60b8bec1e12fed130506"><td class="memItemLeft" align="right" valign="top"><a id="ad192d15fbf1e60b8bec1e12fed130506" name="ad192d15fbf1e60b8bec1e12fed130506"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>critical</b> (const char *string)</td></tr>
+<tr class="memitem:ad192d15fbf1e60b8bec1e12fed130506"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../de/da2/class_bev___logger.html#ad192d15fbf1e60b8bec1e12fed130506">critical</a> (const char *string)</td></tr>
 <tr class="separator:ad192d15fbf1e60b8bec1e12fed130506"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a893680099c1cb91155d711fc4e1406b5"><td class="memItemLeft" align="right" valign="top"><a id="a893680099c1cb91155d711fc4e1406b5" name="a893680099c1cb91155d711fc4e1406b5"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>info</b> (const CAN_message_t &amp;msg)</td></tr>
-<tr class="separator:a893680099c1cb91155d711fc4e1406b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4fa3fd06eb847e97873e430225952602"><td class="memItemLeft" align="right" valign="top"><a id="a4fa3fd06eb847e97873e430225952602" name="a4fa3fd06eb847e97873e430225952602"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>error</b> (const CAN_message_t &amp;msg)</td></tr>
-<tr class="separator:a4fa3fd06eb847e97873e430225952602"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4fdfe94ce042b144707063b6f6091139"><td class="memItemLeft" align="right" valign="top"><a id="a4fdfe94ce042b144707063b6f6091139" name="a4fdfe94ce042b144707063b6f6091139"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>warning</b> (const CAN_message_t &amp;msg)</td></tr>
-<tr class="separator:a4fdfe94ce042b144707063b6f6091139"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0acb066596863ec8496d1ac084064ec5"><td class="memItemLeft" align="right" valign="top"><a id="a0acb066596863ec8496d1ac084064ec5" name="a0acb066596863ec8496d1ac084064ec5"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>critical</b> (const CAN_message_t &amp;msg)</td></tr>
-<tr class="separator:a0acb066596863ec8496d1ac084064ec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8791332ef5799d859de5628f36c653dc"><td class="memItemLeft" align="right" valign="top"><a id="a8791332ef5799d859de5628f36c653dc" name="a8791332ef5799d859de5628f36c653dc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>print</b> (LogLevel level, const char *string)</td></tr>
-<tr class="separator:a8791332ef5799d859de5628f36c653dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a075ec732c60b25e4e257bcb475a0c460"><td class="memItemLeft" align="right" valign="top"><a id="a075ec732c60b25e4e257bcb475a0c460" name="a075ec732c60b25e4e257bcb475a0c460"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>print</b> (const CAN_message_t &amp;msg)</td></tr>
-<tr class="separator:a075ec732c60b25e4e257bcb475a0c460"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c82f69b145a9e293ed742db7bcd1bee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../de/da2/class_bev___logger.html#a0c82f69b145a9e293ed742db7bcd1bee">can</a> (const CAN_message_t &amp;msg)</td></tr>
+<tr class="separator:a0c82f69b145a9e293ed742db7bcd1bee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
-Public Attributes</h2></td></tr>
-<tr class="memitem:a5c55d244b3904bef692337d6392f8040"><td class="memItemLeft" align="right" valign="top"><a id="a5c55d244b3904bef692337d6392f8040" name="a5c55d244b3904bef692337d6392f8040"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>log_mode</b></td></tr>
-<tr class="separator:a5c55d244b3904bef692337d6392f8040"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a8791332ef5799d859de5628f36c653dc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../de/da2/class_bev___logger.html#a8791332ef5799d859de5628f36c653dc">print</a> (<a class="el" href="../../d6/dc6/bev__logger_8h.html#aca1fd1d8935433e6ba2e3918214e07f9">LogLevel</a> level, const char *string)</td></tr>
+<tr class="separator:a8791332ef5799d859de5628f36c653dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a075ec732c60b25e4e257bcb475a0c460"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../de/da2/class_bev___logger.html#a075ec732c60b25e4e257bcb475a0c460">print</a> (const CAN_message_t &amp;msg)</td></tr>
+<tr class="separator:a075ec732c60b25e4e257bcb475a0c460"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="../../d6/dc6/bev__logger_8h_source.html#l00024">24</a> of file <a class="el" href="../../d6/dc6/bev__logger_8h_source.html">bev_logger.h</a>.</p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="afdd25f68b84ace7100fc769a71f316b1" name="afdd25f68b84ace7100fc769a71f316b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afdd25f68b84ace7100fc769a71f316b1">&#9670;&nbsp;</a></span>Bev_Logger()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Bev_Logger::Bev_Logger </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a0c82f69b145a9e293ed742db7bcd1bee" name="a0c82f69b145a9e293ed742db7bcd1bee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c82f69b145a9e293ed742db7bcd1bee">&#9670;&nbsp;</a></span>can()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Bev_Logger::can </td>
+          <td>(</td>
+          <td class="paramtype">const CAN_message_t &amp;&#160;</td>
+          <td class="paramname"><em>msg</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad192d15fbf1e60b8bec1e12fed130506" name="ad192d15fbf1e60b8bec1e12fed130506"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad192d15fbf1e60b8bec1e12fed130506">&#9670;&nbsp;</a></span>critical()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Bev_Logger::critical </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>string</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a780bd091cee291bd11c2cf178f5d47a6" name="a780bd091cee291bd11c2cf178f5d47a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a780bd091cee291bd11c2cf178f5d47a6">&#9670;&nbsp;</a></span>error()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Bev_Logger::error </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>string</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aeca86445ff38df385c3dc6b5a245695b" name="aeca86445ff38df385c3dc6b5a245695b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeca86445ff38df385c3dc6b5a245695b">&#9670;&nbsp;</a></span>info()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Bev_Logger::info </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>string</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a075ec732c60b25e4e257bcb475a0c460" name="a075ec732c60b25e4e257bcb475a0c460"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a075ec732c60b25e4e257bcb475a0c460">&#9670;&nbsp;</a></span>print() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Bev_Logger::print </td>
+          <td>(</td>
+          <td class="paramtype">const CAN_message_t &amp;&#160;</td>
+          <td class="paramname"><em>msg</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8791332ef5799d859de5628f36c653dc" name="a8791332ef5799d859de5628f36c653dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8791332ef5799d859de5628f36c653dc">&#9670;&nbsp;</a></span>print() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Bev_Logger::print </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="../../d6/dc6/bev__logger_8h.html#aca1fd1d8935433e6ba2e3918214e07f9">LogLevel</a>&#160;</td>
+          <td class="paramname"><em>level</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>string</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6ec58f829fe532534399a43e7f761566" name="a6ec58f829fe532534399a43e7f761566"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ec58f829fe532534399a43e7f761566">&#9670;&nbsp;</a></span>warning()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Bev_Logger::warning </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>string</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>include/<a class="el" href="../../d6/dc6/bev__logger_8h_source.html">bev_logger.h</a></li>
 </ul>

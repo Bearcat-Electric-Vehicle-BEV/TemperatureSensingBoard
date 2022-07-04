@@ -7,6 +7,19 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
+/**
+ * @brief Fault Maps for PM100DX and Orion BMS 2
+ * 
+ * @paragraph FaultMaps CAN Fault Maps
+ * The following structs contain fault maps for the PM100DX and Orion BMS 2, 
+ * their faults are sent and parsed over CAN. The structs are used to improve
+ * logging imformation, and determine whether a fault is critical. There do 
+ * exist faults that the vehicle could continue operation, such as PM100DX
+ * timeout, if this occurs the fault is logged and then attempted to be 
+ * cleared. Fault manager takes this boolean "for it's word" and will
+ * continue to clear the fault over and over again. It's important that if
+ * the fault is critical, then it's labeled as so.
+ */
 const Fault_t PM100DX_POST_FaultMap[32] = {
     {"Hardware Gate/Desaturation Fault", true},
     {"HW Over-current Fault", true},
@@ -112,6 +125,21 @@ const Fault_t OrionBMS2_DTCStatus_FaultMap[32] = {
     {"P0A06 (Charge Limit Enforcement Fault)", true},
 };
 
+/**
+ * @brief Fault Checking API
+ * 
+ * @paragraph CheckFaults Fault Manager Fault Handling
+ * The API checks the HighWord and LowWord individually, then if
+ * the word is evaluated as non-zero it's bits are checked. Once a
+ * raised bit is found, the fault map is used to determine if it's 
+ * critical and log a readable message. If the fault is critical the
+ * function returns a bad return code, THIS FUNCTION WILL NOT CHANGE
+ * STATE. If the fault was non-critical, faults are cleared (assuming
+ * no other faults were raised, if so then faults will not be cleared).
+ *  
+ * 
+ * @return code_t 
+ */
 code_t IFaultManager::CheckFaults()
 {
     Fault_t fault;
@@ -158,6 +186,13 @@ code_t IFaultManager::CheckFaults()
     return ret;
 }
 
+/**
+ * @brief Construct a new pm100dx faultmanager::pm100dx faultmanager object
+ * 
+ * @param _HighWord 
+ * @param _LowWord 
+ * @param _FaultMap 
+ */
 PM100DX_FaultManager::PM100DX_FaultManager(uint16_t *_HighWord, uint16_t *_LowWord, 
         const Fault_t *_FaultMap)
 {
@@ -166,7 +201,20 @@ PM100DX_FaultManager::PM100DX_FaultManager(uint16_t *_HighWord, uint16_t *_LowWo
     this->FaultMap = _FaultMap;
 }
 
-code_t PM100DX_FaultManager::ClearFaults()
+/**
+ * @brief PM100DX Clear Faults
+ * 
+ * @return code_t 
+ * 
+ * @paragraph PM100DX ClearFaults PM100DX Clearing Faults
+ * To clear faults, the clear faults command is sent using the param command message.
+ * The Fault Manager is running in it's own task, so it should be noted when trying to
+ * enabled the inverter, that a ClearFaults command is already being sent if no other
+ * critical faults are present. This pertains to "CAN Command Message Lost Fault", which 
+ * is raised when a heartbeat message isn't being sent.
+ * 
+ */
+void PM100DX_FaultManager::ClearFaults()
 {
     static unsigned buffer[M193_Read_Write_Param_Command_DLC] = {
         20, 0, 1, 0, 0, 0, 0, 0
@@ -176,6 +224,13 @@ code_t PM100DX_FaultManager::ClearFaults()
         M193_Read_Write_Param_Command_DLC);
 }
 
+/**
+ * @brief Construct a new OrionBMS2_FaultManager::OrionBMS2_FaultManager object
+ * 
+ * @param _HighWord 
+ * @param _LowWord 
+ * @param _FaultMap 
+ */
 OrionBMS2_FaultManager::OrionBMS2_FaultManager(uint16_t *_HighWord, uint16_t *_LowWord, 
         const Fault_t *_FaultMap)
 {
@@ -184,18 +239,34 @@ OrionBMS2_FaultManager::OrionBMS2_FaultManager(uint16_t *_HighWord, uint16_t *_L
     this->FaultMap = _FaultMap;
 }
 
-code_t OrionBMS2_FaultManager::ClearFaults()
+/**
+ * @brief 
+ * 
+ * @return code_t 
+ * 
+ * @todo Need to find the ClearFaults command for the BMS
+ */
+void OrionBMS2_FaultManager::ClearFaults()
 {
-    static unsigned buffer[M193_Read_Write_Param_Command_DLC] = {
-        20, 0, 1, 0, 0, 0, 0, 0
-    };
+    // static unsigned buffer[M193_Read_Write_Param_Command_DLC] = {
+    //     20, 0, 1, 0, 0, 0, 0, 0
+    // };
 
-    SendMessage(M193_Read_Write_Param_Command_CANID, buffer, 
-        M193_Read_Write_Param_Command_DLC);
+    // SendMessage(M193_Read_Write_Param_Command_CANID, buffer, 
+    //     M193_Read_Write_Param_Command_DLC);
+
 }
 
+/**
+ * @brief FreeRTOS Static Task Structs
+ */
 TaskHandle_t pxFaultManagerHandle;
 
+/**
+ * @brief Fault Manager FreeRTOS Task
+ * 
+ * Creates instances of Fault Managers, checks faults at low frequency, high priority.
+ */
 void vFaultManager(__attribute__((unused)) void * pvParameters)
 {
     static PM100DX_FaultManager rmsPostMgr = PM100DX_FaultManager(

@@ -24,6 +24,7 @@
 #include "bev_pins.h"
 #include "bev_state.h"
 #include "bev_logger.h"
+#include "etc_curve.h"
 
 #include <FreeRTOSConfig.h>
 #include <FreeRTOS.h>
@@ -43,9 +44,18 @@
  */
 
 
+/**
+ * @brief Obstraction of Pedal, makes reading ETC Task easier
+ */
 Pedal::Pedal(pin_t _pin,  uint8_t _src_type) : pin(_pin), src_type(_src_type) {};
 
-// TODO comments and adc ticks
+/**
+ * @brief Reads current pedal position and returns float of position %
+ * 
+ * @return adc_t (float) Percent Press 0-1
+ * 
+ * @note ACCEL_MAX is used here
+ */
 adc_t Pedal::ReadPedal(void)
 {
     switch(src_type)
@@ -70,11 +80,17 @@ adc_t Pedal::ReadPedal(void)
 
 }
 
+/**
+ * @brief Overloaded (-) operator to allow easier readability in ETC task
+ */
 float Pedal::operator-(const Pedal &pedal)
 {
     return (this->ratio - pedal.ratio);
 }
 
+/**
+ * @brief Get Ratio Function for Pedal
+ */
 float Pedal::GetRatio()
 {
   return ratio;
@@ -99,27 +115,15 @@ bool Pedal::Applied(void)
 }
 
 /**
- * @brief Lookup Table
+ * @brief Applies ETC Curve to request
  * 
- * @todo MATLAB/Python script to create graphs, and then populate table
+ * @param request Nm * 10
  */
-
-/* !OPEN TABLE_SIZE! */
-#define TABLE_SIZE (1u)
-/* !CLOSE TABLE_SIZE! */
-
-static code_t ETC_Update(torque_t *request)
+static void ETC_Update(torque_t *request)
 {
-  /* !OPEN LOOKUP! */ 
-  static const torque_t lookup[TABLE_SIZE] = {0x0};
-  /* !CLOSE LOOKUP! */
-
-
+  extern const torque_t lookup[TABLE_SIZE];
 
   *request = lookup[*request];
-
-  return OK;
-
 }
 
 /**
@@ -143,12 +147,7 @@ code_t ETC(Pedal *Pedal0, torque_t *request) {
       return FAIL;
     }
 
-    code_t ret = OK;
-    if ((ret = ETC_Update(request)) != OK)
-    {
-      Log.critical("ETC Failed");
-      return ret;
-    }
+    ETC_Update(request);  // Writes to request
 
     /** @todo Check for restrictions */
     // If request > DCL or something, calc projected current draw?

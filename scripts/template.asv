@@ -1,0 +1,25 @@
+/** %<DATE_TIME> 
+ *
+ * Author: Marshal Stewart
+ *
+ * The following is an auto-generated file 
+ */
+
+#ifndef ETC_CURVE_H
+#define ETC_CURVE_H
+
+#include "bev_etc.h"
+
+#define TABLE_SIZE %<TABLE_SIZE>U
+
+/**
+ * @paragraph ETC Lookup Table
+ * The 
+ * 
+ *
+ */
+static const torque_t lookup[TABLE_SIZE] = {
+%<DATA>
+};
+
+#endif  // ETC_CRUVE_H

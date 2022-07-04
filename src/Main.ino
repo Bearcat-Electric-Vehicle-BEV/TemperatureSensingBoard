@@ -34,6 +34,7 @@
 
 #include <task.h>
 
+
 void vApplicationIdleHook(void)
 {
     ServiceCANIdle();
@@ -68,7 +69,15 @@ void setup() {
 
   CANInit();
 
-  /** @todo Static Allocation */
+  /** 
+   * @paragraph Static Allocation vs Dynamic Allocation
+   * On embedded targets static allocation is typically favored, however with
+   * the high stakes of a stack overflow causing the car to fail. The temptation
+   * to go with heap allocation is real. Most definiently slower, however lowers
+   * probability of stack overflow. With that being said, stack overflow checks
+   * should be in place. There exist tools or methods to determine how much heap
+   * is being used.
+   */
   xTaskCreate(vStateMachine, "STATE", 1024, nullptr, 10, &pxStateMachineHandle);
   xTaskCreate(vETCTask, "ETC", 1024, nullptr, 5, &pxETCTaskHandle);
   xTaskCreate(vFaultManager, "FAULT", 1024, nullptr, 6, &pxFaultManagerHandle);
