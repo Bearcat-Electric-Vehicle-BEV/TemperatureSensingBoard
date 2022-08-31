@@ -6,21 +6,19 @@
 
 #include "bev_can.h"
 
-#define GENERATE_ENUM(ENUM) ENUM,
-#define GENERATE_STRING(STRING) #STRING,
-
-#define FOREACH_LEVEL(LEVEL) \
-        LEVEL(INFO)   \
-        LEVEL(ERROR)  \
-        LEVEL(CRITICAL)   \
-        LEVEL(WARNING)  \
-
 enum LogLevel{
-    FOREACH_LEVEL(GENERATE_ENUM)
+    INFO = 0,
+    ERROR,
+    CRITICAL,
+    WARNING,
+    NUM_LOG_LEVELS,
 };
 
-static const char *LEVEL_STRING[] = {
-    FOREACH_LEVEL(GENERATE_STRING)
+const char *LEVEL_STRING[NUM_LOG_LEVELS] = {
+    "INFO",
+    "ERROR",
+    "CRITICAL",
+    "WARNING",
 };
 
 class Bev_Logger {

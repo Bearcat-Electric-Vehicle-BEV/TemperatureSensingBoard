@@ -290,7 +290,9 @@ FLASHMEM void yield() {
 }
 
 #if configUSE_IDLE_HOOK == 1
-void vApplicationIdleHook() {}
+void __attribute__((weak)) vApplicationIdleHook()
+{
+}
 #endif // configUSE_IDLE_HOOK
 
 void vApplicationStackOverflowHook(TaskHandle_t, char*) FLASHMEM;

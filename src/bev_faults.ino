@@ -216,6 +216,10 @@ PM100DX_FaultManager::PM100DX_FaultManager(uint16_t *_HighWord, uint16_t *_LowWo
  */
 void PM100DX_FaultManager::ClearFaults()
 {
+    #if BEV_DEBUG
+        Serial.println("Clearing faults")
+    #endif
+
     static unsigned buffer[M193_Read_Write_Param_Command_DLC] = {
         20, 0, 1, 0, 0, 0, 0, 0
     };
@@ -285,13 +289,17 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
                 OrionBMS2_DTCStatus_FaultMap);
  	
     TickType_t xLastWakeTime;
- 	const TickType_t xFrequency = pdMS_TO_TICKS(1000);
+ 	const TickType_t xFrequency = pdMS_TO_TICKS(2500);
 
      // Initialise the xLastWakeTime variable with the current time.
     xLastWakeTime = xTaskGetTickCount();
 
     for( ;; )
     {
+
+        #ifdef DEBUG_BEV
+        Serial.println("FAULT TASK");
+        #endif
 
         if (rmsPostMgr.CheckFaults() != OK)
         {

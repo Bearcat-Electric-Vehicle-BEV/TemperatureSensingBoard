@@ -31,7 +31,7 @@
  * Original documentation on the states can be found at https://xiahualiu.github.io/posts/bev-tasks/
  */
 
-static volatile ECUState_t ECUState;
+static ECUState_t ECUState;
 
 /**
  * @brief Transition the current state
@@ -106,15 +106,21 @@ TaskHandle_t pxStateMachineHandle;
  */
 void vStateMachine(__attribute__((unused)) void * pvParameters)
 {
-
     TickType_t xLastWakeTime;
- 	  const TickType_t xFrequency = pdMS_TO_TICKS(25);
+ 	const TickType_t xFrequency = pdMS_TO_TICKS(1000);
 
     // Initialise the xLastWakeTime variable with the current time.
     xLastWakeTime = xTaskGetTickCount();
 
     for( ;; )
     {
+        #ifdef DEBUG_BEV
+            Serial.println("Entering STATE TASK");
+            Serial.println(GetStateStr());
+        #endif
+                
+        ServiceCANIdle();
+        
         if (CheckState(INIT)) {
             digitalWrite(PIN_ECU_OK, LOW);
             ChangeState(RESET);
@@ -131,7 +137,13 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
         else if(CheckState(ERROR_STATE)) {
             digitalWrite(PIN_ECU_OK, LOW);
             SendInverterDisable();
+            
+            #ifdef DEBUG_BEV
+            Serial.println("Entered Error State");
+            #else 
             configASSERT(NULL);  // Reset vector?
+            #endif
+            
         } 
         else if(CheckState(ROUTINE_CHECK)) {
             /** @todo */
@@ -142,7 +154,7 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
             digitalWrite(PIN_ECU_OK, LOW);
             digitalWrite(PIN_PRECHARGE_FINISHED, LOW);
 
-            ChangeState(PRE_HV_CHECK);
+            ChangeState(HV_READY_WAIT);
         } 
         else if(CheckState(HV_READY_WAIT)) {
             digitalWrite(PIN_ECU_OK, HIGH);
@@ -171,11 +183,7 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
             ChangeState(READY_TO_GO_WAIT);        
         } 
         else if(CheckState(READY_TO_GO_WAIT)) {
-            /** @todo Allow ETC Task to run */
-        
-            // EnableMotor();
-            // SendInverterDisable();
-        
+            /** @note ETC Task is unblocked and running */
         }
         else {
           Log.critical("Entered unknown state, jumping to error");

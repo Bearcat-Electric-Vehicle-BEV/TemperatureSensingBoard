@@ -34,15 +34,31 @@
 
 #include <task.h>
 
+void SerialAlertFail(const char *str)
+{
+  Serial.println(str);
+}
 
+/**
+ * @brief FreeRTOS Idle Task Hook
+ * Function runs as part of the IDLE task. Used to run
+ * services that if starved would result in system failure. 
+ * If starved indicates that the application is poorly 
+ * designed. Scheduler shouldn't ever go beyond 65% utilization.
+ */
 void vApplicationIdleHook(void)
 {
+    Serial.println("IDLE TASK");
     ServiceCANIdle();
 }
 
+/**
+ * @brief Initialization
+ * Setup I/O and system modules here before scheduler starts.
+ */
 void setup() {
 
-  // Serial.begin(115200); 
+  Serial.begin(9600); 
   delay(400);
   ChangeState(INIT);
 
@@ -65,7 +81,7 @@ void setup() {
   pinMode(PIN_FORWARD_ENABLE, OUTPUT);
  
   /* tranceiver enable pin */
-  digitalWrite(PIN_CAN_TRANS_STDBY, LOW); 
+  digitalWrite(PIN_CAN_TRANS_STDBY, LOW);
 
   CANInit();
 
@@ -78,9 +94,9 @@ void setup() {
    * should be in place. There exist tools or methods to determine how much heap
    * is being used.
    */
-  xTaskCreate(vStateMachine, "STATE", 1024, nullptr, 10, &pxStateMachineHandle);
-  xTaskCreate(vETCTask, "ETC", 1024, nullptr, 5, &pxETCTaskHandle);
-  xTaskCreate(vFaultManager, "FAULT", 1024, nullptr, 6, &pxFaultManagerHandle);
+  xTaskCreate(vStateMachine, "STATE", 2048, nullptr, 3, &pxStateMachineHandle);
+  xTaskCreate(vETCTask, "ETC", 2048, nullptr, 2, &pxETCTaskHandle);
+  xTaskCreate(vFaultManager, "FAULT", 2048, nullptr, 4, &pxFaultManagerHandle);
 
   /** @note Execution doesn't go beyond scheduler */
   vTaskStartScheduler();

@@ -21,7 +21,7 @@ extern bev_dbc_rx_t DBCParser;
  * @brief Struct containing parameters sent in command message
  * 
  */
-typedef volatile struct {
+typedef struct {
     int16_t Torque_Limit_Command;   // BitPos 48 - Len 16
     uint8_t RollingCounter;         // BitPos 44 - Len 4
     uint8_t Speed_Mode_Enabled;     // BitPos 42 - Len 1

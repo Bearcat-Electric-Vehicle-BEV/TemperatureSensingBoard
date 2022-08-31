@@ -58,7 +58,7 @@ extern "C" {
 #define configMINIMAL_STACK_SIZE                    ( ( unsigned short ) 128 )
 #define configMAX_TASK_NAME_LEN                     ( 10 )
 #define configUSE_16_BIT_TICKS                      0
-#define configIDLE_SHOULD_YIELD                     1
+#define configIDLE_SHOULD_YIELD                     0
 #define configUSE_TASK_NOTIFICATIONS                1
 #define configTASK_NOTIFICATION_ARRAY_ENTRIES       4
 #define configUSE_MUTEXES                           1
@@ -138,6 +138,7 @@ void assert_blink(const char*, int, const char*, const char*) __attribute__((nor
         assert_blink((const char*) _file_, __LINE__, __PRETTY_FUNCTION__, #_msg);   \
     }
 #endif // __cplusplus
+// extern void SerialAlertFail(const char *str);
 #define configASSERT(_e)               \
     if (__builtin_expect(!!(_e), 1)) { \
         (void) 0;                      \

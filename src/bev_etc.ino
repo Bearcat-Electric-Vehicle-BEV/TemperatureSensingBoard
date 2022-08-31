@@ -179,24 +179,26 @@ TaskHandle_t pxETCTaskHandle;
 void vETCTask(__attribute__((unused)) void * pvParameters)
 {
     TickType_t xLastWakeTime;
-    const TickType_t xFrequency = pdMS_TO_TICKS(50);
+    const TickType_t xFrequency = pdMS_TO_TICKS(225);
+    const TickType_t ImplausibilityTime = pdMS_TO_TICKS(100);
 
      // Initialise the xLastWakeTime variable with the current time.
     xLastWakeTime = xTaskGetTickCount();
 
     /** @note BRAKE is digital, however could be analog in future */
-    static Pedal Accel_0(PIN_ACCEL_0, ANALOG_0V_3V);
-    static Pedal Accel_1(PIN_ACCEL_1, ANALOG_0V_3V);
-    static Pedal Brake(PIN_BRAKE_POS, DIGITAL);
+    Pedal Accel_0(PIN_ACCEL_0, ANALOG_0V_3V);
+    Pedal Accel_1(PIN_ACCEL_1, ANALOG_0V_3V);
+    Pedal Brake(PIN_BRAKE_POS, DIGITAL);
 
-    static const TickType_t ImplausibilityTime = pdMS_TO_TICKS(100);
     bool InvalidAPPS = false;
 
     /** @todo utilize validity bits */
-    static torque_t Request = 0;
-    static bool RequestValid = false;
+    torque_t Request = 0;
+    
+    /** @todo Needs used */
+    bool __attribute__((unused)) RequestValid = false;
 
-    static CmdParameters_t cmd;
+    CmdParameters_t cmd;
 
     cmd.Torque_Limit_Command = 0;   /** @todo need to find valid value */
     cmd.RollingCounter = 0;
@@ -209,17 +211,34 @@ void vETCTask(__attribute__((unused)) void * pvParameters)
     for( ;; )
     {
 
+      #ifdef DEBUG_BEV
+      Serial.println("ETC Task");
+      #endif
+
       if (!CheckState(READY_TO_GO_WAIT))
       {
-          vTaskDelayUntil( &xLastWakeTime, xFrequency);
+          vTaskDelayUntil(&xLastWakeTime, xFrequency);
+          continue;
       }
 
       /** @todo Need way of determining if first time enabling motor */
       // SendInverterEnable();
 
+      /** Detect if pedals are connected */
       Accel_0.ReadPedal();
       Accel_1.ReadPedal();
       Brake.ReadPedal();
+
+      #ifdef DEBUG_BEV
+        char buffer[20] = {0};
+        snprintf(buffer, 20, "%f", Accel_0.GetRatio());
+        Log.info(buffer);
+        snprintf(buffer, 20, "%f", Accel_1.GetRatio());
+        Log.info(buffer);
+        snprintf(buffer, 20, "%f", Brake.GetRatio());
+        Log.info(buffer);
+      #endif
+
 
       /** @note FSAE T.4.2.6 Page 62 */
       if (abs(Accel_0 - Accel_1) > 0.10)
@@ -235,7 +254,7 @@ void vETCTask(__attribute__((unused)) void * pvParameters)
            * Can be outside the threshold for 100ms
            */
           InvalidAPPS = true;
-          vTaskDelayUntil( &xLastWakeTime, ImplausibilityTime);
+          vTaskDelayUntil(&xLastWakeTime, ImplausibilityTime);
 
       }
       else if (Brake.Applied() && (Accel_0.Applied() || Accel_1.Applied()))
@@ -265,15 +284,15 @@ void vETCTask(__attribute__((unused)) void * pvParameters)
       }
       else
       {
-        cmd.RollingCounter++;
+        cmd.RollingCounter = cmd.RollingCounter + 1;
       }
 
       SendCommandMessage(&cmd);
 
       // Wait for the next cycle.
-      vTaskDelayUntil( &xLastWakeTime, xFrequency);
+      vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
- 
+
     configASSERT(NULL);
  
 }

@@ -50,7 +50,6 @@ private:
 
 };
 
-extern code_t EnableMotor(void);
 extern code_t ETC(Pedal *pedal_0, torque_t *request);
 extern TaskHandle_t pxETCTaskHandle;
 void vETCTask(void * pvParameters);
