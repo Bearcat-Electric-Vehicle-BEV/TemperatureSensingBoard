@@ -69,7 +69,11 @@ adc_t Pedal::ReadPedal(void)
         break;
       case ANALOG_3V_0V:
         pos = analogRead(pin);
-        ratio = 1 - ((float)pos / ACCEL_MAX);
+        ratio = 1 - ((float)pos / 650);
+        break;
+      case ANALOG_0V_5V:
+        pos = analogRead(pin);
+        ratio = (float)pos / ACCEL_MAX;
         break;
       default:
         // Log.error("Invalid Pedal Src Type: %d", src_type);
@@ -179,15 +183,15 @@ TaskHandle_t pxETCTaskHandle;
 void vETCTask(__attribute__((unused)) void * pvParameters)
 {
     TickType_t xLastWakeTime;
-    const TickType_t xFrequency = pdMS_TO_TICKS(225);
+    const TickType_t xFrequency = pdMS_TO_TICKS(100);
     const TickType_t ImplausibilityTime = pdMS_TO_TICKS(100);
 
      // Initialise the xLastWakeTime variable with the current time.
     xLastWakeTime = xTaskGetTickCount();
 
     /** @note BRAKE is digital, however could be analog in future */
-    Pedal Accel_0(PIN_ACCEL_0, ANALOG_0V_3V);
-    Pedal Accel_1(PIN_ACCEL_1, ANALOG_0V_3V);
+    Pedal Accel_0(PIN_ACCEL_0, ANALOG_0V_5V);
+    Pedal Accel_1(PIN_ACCEL_1, ANALOG_3V_0V);
     Pedal Brake(PIN_BRAKE_POS, DIGITAL);
 
     bool InvalidAPPS = false;
@@ -212,7 +216,7 @@ void vETCTask(__attribute__((unused)) void * pvParameters)
     {
 
       #ifdef DEBUG_BEV
-      Serial.println("ETC Task");
+      // Serial.println("ETC Task");
       #endif
 
       if (!CheckState(READY_TO_GO_WAIT))
@@ -227,18 +231,14 @@ void vETCTask(__attribute__((unused)) void * pvParameters)
       /** Detect if pedals are connected */
       Accel_0.ReadPedal();
       Accel_1.ReadPedal();
+      /// @todo Brake is a high priority, maybe add interrupt 
       Brake.ReadPedal();
 
       #ifdef DEBUG_BEV
-        char buffer[20] = {0};
-        snprintf(buffer, 20, "%f", Accel_0.GetRatio());
-        Log.info(buffer);
-        snprintf(buffer, 20, "%f", Accel_1.GetRatio());
-        Log.info(buffer);
-        snprintf(buffer, 20, "%f", Brake.GetRatio());
-        Log.info(buffer);
+        // char buffer[40] = {0};
+        // snprintf(buffer, 40, "%f,%f", Accel_0.GetRatio(), Accel_1.GetRatio());
+        // Log.info(buffer);
       #endif
-
 
       /** @note FSAE T.4.2.6 Page 62 */
       if (abs(Accel_0 - Accel_1) > 0.10)

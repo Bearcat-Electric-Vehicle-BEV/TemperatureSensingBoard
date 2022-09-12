@@ -31,7 +31,23 @@
  * Original documentation on the states can be found at https://xiahualiu.github.io/posts/bev-tasks/
  */
 
-static ECUState_t ECUState;
+volatile ECUState_t ECUState;
+
+/**
+ * @brief 
+ * ISR for debouncing SHUTDOWN_TTL_OK
+ */
+void ISR_SHUTDOWN_TTL_OK(void)
+{
+    /// @todo debounce
+
+    if (0)
+    {
+    /// Change to error state
+    ChangeState(ERROR_STATE, "PIN_SHUTDOWN_TTL_OK went HIGH");
+    }
+
+}
 
 /**
  * @brief Transition the current state
@@ -114,11 +130,6 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
 
     for( ;; )
     {
-        #ifdef DEBUG_BEV
-            Serial.println("Entering STATE TASK");
-            Serial.println(GetStateStr());
-        #endif
-                
         ServiceCANIdle();
         
         if (CheckState(INIT)) {
@@ -139,9 +150,9 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
             SendInverterDisable();
             
             #ifdef DEBUG_BEV
-            Serial.println("Entered Error State");
+            // Serial.println("Entered Error State");
             #else 
-            configASSERT(NULL);  // Reset vector?
+            //configASSERT(NULL);  // Reset vector?
             #endif
             
         } 
@@ -170,11 +181,13 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
          */
         else if(CheckState(PRECHARGE_WAIT)) {
             // 5 Time Constants of the Pre-Charge Circuit
-            /** @todo Disable interrupts */
-            delay(1500);
+            vTaskSuspendAll();
+            vTaskDelay(pdMS_TO_TICKS(1500));
+            xTaskResumeAll();
 
             if (digitalRead(PIN_FORWARD_SWITCH) == HIGH)
             {
+              /// @todo Need to redo 
               digitalWrite(PIN_FORWARD_ENABLE, HIGH);
               // Play ready to go sound
               // Change state to 

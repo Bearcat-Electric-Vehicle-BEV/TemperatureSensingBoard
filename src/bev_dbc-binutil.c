@@ -98,9 +98,9 @@ uint32_t bev_dbc_Receive(bev_dbc_rx_t* _m, const uint8_t* _d, uint32_t _id, uint
      }
     } else {
      if (_id == 0x6B1U) {
-      recid = Unpack_BMS_Msg1_bev_dbc(&(_m->BMS_Msg1), _d, dlc_);
+      recid = Unpack_MSGID_0X6B1_bev_dbc(&(_m->MSGID_0X6B1), _d, dlc_);
      } else if (_id == 0x6B2U) {
-      recid = Unpack_BMS_Faults1_bev_dbc(&(_m->BMS_Faults1), _d, dlc_);
+      recid = Unpack_MSGID_0X6B2_bev_dbc(&(_m->MSGID_0X6B2), _d, dlc_);
      }
     }
    }

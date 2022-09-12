@@ -34,10 +34,6 @@
 
 #include <task.h>
 
-void SerialAlertFail(const char *str)
-{
-  Serial.println(str);
-}
 
 /**
  * @brief FreeRTOS Idle Task Hook
@@ -45,12 +41,14 @@ void SerialAlertFail(const char *str)
  * services that if starved would result in system failure. 
  * If starved indicates that the application is poorly 
  * designed. Scheduler shouldn't ever go beyond 65% utilization.
+ * 
+ * @note Unsupported for Teensy 4.1 FreeRTOS port, moved to state task
  */
-void vApplicationIdleHook(void)
-{
-    Serial.println("IDLE TASK");
-    ServiceCANIdle();
-}
+// void vApplicationIdleHook(void)
+// {
+//     Serial.println("IDLE TASK");
+//     ServiceCANIdle();
+// }
 
 /**
  * @brief Initialization
@@ -85,6 +83,13 @@ void setup() {
 
   CANInit();
 
+  /// @todo Setup watchdog
+  
+  /// @todo Setup BRAKE interrupt
+  // attachInterrupt(PIN_BRAKE_POS, null);
+
+  attachInterrupt(PIN_SHUTDOWN_TTL_OK, ISR_SHUTDOWN_TTL_OK, RISING);
+
   /** 
    * @paragraph Static Allocation vs Dynamic Allocation
    * On embedded targets static allocation is typically favored, however with
@@ -95,7 +100,7 @@ void setup() {
    * is being used.
    */
   xTaskCreate(vStateMachine, "STATE", 2048, nullptr, 3, &pxStateMachineHandle);
-  xTaskCreate(vETCTask, "ETC", 2048, nullptr, 2, &pxETCTaskHandle);
+  xTaskCreate(vETCTask, "ETC", 2048, nullptr, 5, &pxETCTaskHandle);
   xTaskCreate(vFaultManager, "FAULT", 2048, nullptr, 4, &pxFaultManagerHandle);
 
   /** @note Execution doesn't go beyond scheduler */

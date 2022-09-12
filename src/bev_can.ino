@@ -28,7 +28,6 @@
 #include <semphr.h>
 
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-SemaphoreHandle_t xCanSemaphore;
 
 bev_dbc_rx_t DBCParser;
 
@@ -36,10 +35,13 @@ void ServiceCANIdle()
 {
 
     #ifdef DEBUG_BEV
-    Serial.println("Service CAN");
+    // Serial.println("Service CAN");
     #endif
 
+    portENTER_CRITICAL();
     Can0.events();
+    portEXIT_CRITICAL();
+
 }
 
 /**
@@ -58,13 +60,16 @@ void ServiceCANIdle()
  */
 code_t CANInit(){
 
-    xCanSemaphore = xSemaphoreCreateMutex();
-
     Can0.begin();
     Can0.setBaudRate(500000);
     Can0.setMaxMB(16);
+
     Can0.enableFIFO();
-    // Can0.enableFIFOInterrupt();
+    Can0.setFIFOFilter(REJECT_ALL);
+    Can0.setFIFOFilter(0, MSGID_0X6B1_CANID, STD);
+    Can0.setFIFOFilter(1, MSGID_0X6B2_CANID, STD);
+    Can0.enableFIFOInterrupt();
+    
     Can0.onReceive(CanSniff);
     Can0.mailboxStatus();
     
@@ -103,13 +108,19 @@ code_t SendMessage(unsigned id, const unsigned *buffer, unsigned len) {
         msg.buf[i] = buffer[i];
     }
 
-    if( xSemaphoreTake( xCanSemaphore, ( TickType_t ) 10 ) == pdTRUE )
-    {
-        portENTER_CRITICAL();
-        Can0.write(msg);
-        xSemaphoreGive(xCanSemaphore);
-        portEXIT_CRITICAL();
-    }
+    #ifdef DEBUG_BEV
+    // Serial.println("Sending Message ID:");
+    // Serial.println(msg.id);
+    #endif
+
+    vTaskSuspendAll();
+    Can0.write(msg);
+    xTaskResumeAll();
+        
+    // if( xSemaphoreTake( xCanSemaphore, ( TickType_t ) 10 ) == pdTRUE )
+    // {
+    //     xSemaphoreGive(xCanSemaphore);
+    // }
 
     return OK;
 
@@ -135,10 +146,6 @@ void SendInverterDisable()
  */
 void SendCommandMessage(CmdParameters_t *cmd){
 
-    #ifdef DEBUG_BEV
-        Serial.println("Sending CMD");
-    #endif 
-
     CAN_message_t msg;
 
     msg.id = M192_Command_Message_CANID;
@@ -163,23 +170,16 @@ void SendCommandMessage(CmdParameters_t *cmd){
 
     msg.buf[6] = (cmd->Torque_Limit_Command * 10) % 256;
     msg.buf[7] = int(cmd->Torque_Limit_Command * (10 / 256));
-    
-    if( xSemaphoreTake( xCanSemaphore, ( TickType_t ) 20 ) == pdTRUE )
-    {
 
-        #ifdef DEBUG_BEV
-        Serial.println(msg.id);
-        Log.can(msg);
-        #endif
+    #ifdef DEBUG_BEV
+    // Serial.println("Sending CMD");
+    // Serial.println(msg.id);
+    // Log.can(msg);
+    #endif
 
-        portENTER_CRITICAL();
-        Can0.write(msg);
-        xSemaphoreGive(xCanSemaphore);
-        portEXIT_CRITICAL();
-    }
-    else{
-        Serial.println("Failed to send CAN msg");
-    }
+    vTaskSuspendAll();
+    Can0.write(msg);
+    xTaskResumeAll();
 
 }
 
@@ -196,7 +196,7 @@ void SendCommandMessage(CmdParameters_t *cmd){
 void CanSniff(const CAN_message_t &msg){
 
     #ifdef DEBUG_BEV
-    Serial.println("Recieved can msg");
+    // Serial.println("Recieved can msg, ID:");
     #endif
 
     Log.can(msg);

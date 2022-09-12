@@ -1746,54 +1746,85 @@ typedef struct
 
 } BMS_Current_Limit_t;
 
-// def @BMS_Msg1 CAN Message (1713 0x6b1)
-#define BMS_Msg1_IDE (0U)
-#define BMS_Msg1_DLC (8U)
-#define BMS_Msg1_CANID (0x6b1)
+// This ID Transmits at 8 ms.
+// def @MSGID_0X6B1 CAN Message (1713 0x6b1)
+#define MSGID_0X6B1_IDE (0U)
+#define MSGID_0X6B1_DLC (8U)
+#define MSGID_0X6B1_CANID (0x6b1)
+// signal: @Pack_SOC_ro
+#define BEV_DBC_Pack_SOC_ro_CovFactor (0.500000)
+#define BEV_DBC_Pack_SOC_ro_toS(x) ( (uint8_t) (((x) - (0.000000)) / (0.500000)) )
+#define BEV_DBC_Pack_SOC_ro_fromS(x) ( (((x) * (0.500000)) + (0.000000)) )
+// signal: @High_Cell_Voltage_ro
+#define BEV_DBC_High_Cell_Voltage_ro_CovFactor (0.000100)
+#define BEV_DBC_High_Cell_Voltage_ro_toS(x) ( (uint8_t) (((x) - (0.000000)) / (0.000100)) )
+#define BEV_DBC_High_Cell_Voltage_ro_fromS(x) ( (((x) * (0.000100)) + (0.000000)) )
+// signal: @Pack_Current_ro
+#define BEV_DBC_Pack_Current_ro_CovFactor (0.100000)
+#define BEV_DBC_Pack_Current_ro_toS(x) ( (uint8_t) (((x) - (0.000000)) / (0.100000)) )
+#define BEV_DBC_Pack_Current_ro_fromS(x) ( (((x) * (0.100000)) + (0.000000)) )
 
 typedef struct
 {
 #ifdef BEV_DBC_USE_BITS_SIGNAL
 
-  // Pack State of Charge
-  uint8_t SOC;                               //      Bits= 8 Unit:'%'
+  uint8_t Pack_SOC_ro;                       //      Bits= 8 Factor= 0.500000        Unit:'Percent'
 
-  // Pack Discharge Current Limit
-  uint8_t DCL;                               //      Bits= 8 Unit:'A'
+#ifdef BEV_DBC_USE_SIGFLOAT
+  sigfloat_t Pack_SOC_phys;
+#endif // BEV_DBC_USE_SIGFLOAT
 
-  // Pack Charge Current Limit
-  uint8_t CCL;                               //      Bits= 8 Unit:'A'
+  uint8_t Pack_DCL;                          //      Bits= 8 Unit:'Amps'
 
-  uint8_t Internal_Temperature;              //      Bits= 8 Unit:'C'
+  uint8_t Pack_CCL;                          //      Bits= 8 Unit:'Amps'
 
-  uint8_t Highest_Cell_Voltage;              //      Bits= 8 Unit:'V'
+  uint8_t Internal_Temperature;              //      Bits= 8 Unit:'Celsius'
 
-  uint8_t Pack_Current;                      //      Bits= 8 Unit:'A'
+  uint8_t High_Cell_Voltage_ro;              //      Bits= 8 Factor= 0.000100        Unit:'Volts'
 
-  uint8_t Populated_Cells;                   //      Bits= 8
+#ifdef BEV_DBC_USE_SIGFLOAT
+  sigfloat_t High_Cell_Voltage_phys;
+#endif // BEV_DBC_USE_SIGFLOAT
 
-  uint8_t Checksum;                          //      Bits= 8
+  uint8_t Pack_Current_ro;                   //      Bits= 8 Factor= 0.100000        Unit:'Amps'
+
+#ifdef BEV_DBC_USE_SIGFLOAT
+  sigfloat_t Pack_Current_phys;
+#endif // BEV_DBC_USE_SIGFLOAT
+
+  uint8_t Populated_Cells;                   //      Bits= 8 Unit:'Num'
+
+  uint8_t CRC_Checksum;                      //      Bits= 8
 
 #else
 
-  // Pack State of Charge
-  uint8_t SOC;                               //      Bits= 8 Unit:'%'
+  uint8_t Pack_SOC_ro;                       //      Bits= 8 Factor= 0.500000        Unit:'Percent'
 
-  // Pack Discharge Current Limit
-  uint8_t DCL;                               //      Bits= 8 Unit:'A'
+#ifdef BEV_DBC_USE_SIGFLOAT
+  sigfloat_t Pack_SOC_phys;
+#endif // BEV_DBC_USE_SIGFLOAT
 
-  // Pack Charge Current Limit
-  uint8_t CCL;                               //      Bits= 8 Unit:'A'
+  uint8_t Pack_DCL;                          //      Bits= 8 Unit:'Amps'
 
-  uint8_t Internal_Temperature;              //      Bits= 8 Unit:'C'
+  uint8_t Pack_CCL;                          //      Bits= 8 Unit:'Amps'
 
-  uint8_t Highest_Cell_Voltage;              //      Bits= 8 Unit:'V'
+  uint8_t Internal_Temperature;              //      Bits= 8 Unit:'Celsius'
 
-  uint8_t Pack_Current;                      //      Bits= 8 Unit:'A'
+  uint8_t High_Cell_Voltage_ro;              //      Bits= 8 Factor= 0.000100        Unit:'Volts'
 
-  uint8_t Populated_Cells;                   //      Bits= 8
+#ifdef BEV_DBC_USE_SIGFLOAT
+  sigfloat_t High_Cell_Voltage_phys;
+#endif // BEV_DBC_USE_SIGFLOAT
 
-  uint8_t Checksum;                          //      Bits= 8
+  uint8_t Pack_Current_ro;                   //      Bits= 8 Factor= 0.100000        Unit:'Amps'
+
+#ifdef BEV_DBC_USE_SIGFLOAT
+  sigfloat_t Pack_Current_phys;
+#endif // BEV_DBC_USE_SIGFLOAT
+
+  uint8_t Populated_Cells;                   //      Bits= 8 Unit:'Num'
+
+  uint8_t CRC_Checksum;                      //      Bits= 8
 
 #endif // BEV_DBC_USE_BITS_SIGNAL
 
@@ -1803,27 +1834,31 @@ typedef struct
 
 #endif // BEV_DBC_USE_DIAG_MONITORS
 
-} BMS_Msg1_t;
+} MSGID_0X6B1_t;
 
-// For all the values in the signals in the message, 1 signifies the signal or relay is enabled or active (high). 0 means inactive or off (low).
-// def @BMS_Faults1 CAN Message (1714 0x6b2)
-#define BMS_Faults1_IDE (0U)
-#define BMS_Faults1_DLC (8U)
-#define BMS_Faults1_CANID (0x6b2)
+// This ID Transmits at 8 ms.
+// def @MSGID_0X6B2 CAN Message (1714 0x6b2)
+#define MSGID_0X6B2_IDE (0U)
+#define MSGID_0X6B2_DLC (8U)
+#define MSGID_0X6B2_CANID (0x6b2)
 
 typedef struct
 {
 #ifdef BEV_DBC_USE_BITS_SIGNAL
 
-  uint16_t DTCStatus1;                       //      Bits=16
+  uint8_t DTC_Flags_1;                       //      Bits= 8
 
-  uint16_t DTCStatus2;                       //      Bits=16
+  uint8_t DTC_Flags_2;                       //      Bits= 8
+
+  uint8_t CRC_Checksum;                      //      Bits= 8
 
 #else
 
-  uint16_t DTCStatus1;                       //      Bits=16
+  uint8_t DTC_Flags_1;                       //      Bits= 8
 
-  uint16_t DTCStatus2;                       //      Bits=16
+  uint8_t DTC_Flags_2;                       //      Bits= 8
+
+  uint8_t CRC_Checksum;                      //      Bits= 8
 
 #endif // BEV_DBC_USE_BITS_SIGNAL
 
@@ -1833,7 +1868,7 @@ typedef struct
 
 #endif // BEV_DBC_USE_DIAG_MONITORS
 
-} BMS_Faults1_t;
+} MSGID_0X6B2_t;
 
 // Function signatures
 
@@ -1998,18 +2033,18 @@ uint32_t Pack_BMS_Current_Limit_bev_dbc(BMS_Current_Limit_t* _m, __CoderDbcCanFr
 uint32_t Pack_BMS_Current_Limit_bev_dbc(BMS_Current_Limit_t* _m, uint8_t* _d, uint8_t* _len, uint8_t* _ide);
 #endif // BEV_DBC_USE_CANSTRUCT
 
-uint32_t Unpack_BMS_Msg1_bev_dbc(BMS_Msg1_t* _m, const uint8_t* _d, uint8_t dlc_);
+uint32_t Unpack_MSGID_0X6B1_bev_dbc(MSGID_0X6B1_t* _m, const uint8_t* _d, uint8_t dlc_);
 #ifdef BEV_DBC_USE_CANSTRUCT
-uint32_t Pack_BMS_Msg1_bev_dbc(BMS_Msg1_t* _m, __CoderDbcCanFrame_t__* cframe);
+uint32_t Pack_MSGID_0X6B1_bev_dbc(MSGID_0X6B1_t* _m, __CoderDbcCanFrame_t__* cframe);
 #else
-uint32_t Pack_BMS_Msg1_bev_dbc(BMS_Msg1_t* _m, uint8_t* _d, uint8_t* _len, uint8_t* _ide);
+uint32_t Pack_MSGID_0X6B1_bev_dbc(MSGID_0X6B1_t* _m, uint8_t* _d, uint8_t* _len, uint8_t* _ide);
 #endif // BEV_DBC_USE_CANSTRUCT
 
-uint32_t Unpack_BMS_Faults1_bev_dbc(BMS_Faults1_t* _m, const uint8_t* _d, uint8_t dlc_);
+uint32_t Unpack_MSGID_0X6B2_bev_dbc(MSGID_0X6B2_t* _m, const uint8_t* _d, uint8_t dlc_);
 #ifdef BEV_DBC_USE_CANSTRUCT
-uint32_t Pack_BMS_Faults1_bev_dbc(BMS_Faults1_t* _m, __CoderDbcCanFrame_t__* cframe);
+uint32_t Pack_MSGID_0X6B2_bev_dbc(MSGID_0X6B2_t* _m, __CoderDbcCanFrame_t__* cframe);
 #else
-uint32_t Pack_BMS_Faults1_bev_dbc(BMS_Faults1_t* _m, uint8_t* _d, uint8_t* _len, uint8_t* _ide);
+uint32_t Pack_MSGID_0X6B2_bev_dbc(MSGID_0X6B2_t* _m, uint8_t* _d, uint8_t* _len, uint8_t* _ide);
 #endif // BEV_DBC_USE_CANSTRUCT
 
 #ifdef __cplusplus

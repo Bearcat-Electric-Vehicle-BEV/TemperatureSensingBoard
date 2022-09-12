@@ -149,6 +149,9 @@ code_t IFaultManager::CheckFaults()
     uint16_t *wordPtr;
     uint16_t *words[2] = {HighWord, LowWord};
 
+    Serial.println(*HighWord);
+    Serial.println(*LowWord);
+
     for (int j=0; j<2; j++){
         wordPtr = words[j];
 
@@ -159,6 +162,7 @@ code_t IFaultManager::CheckFaults()
                 if (*wordPtr & (0x1 < i))
                 {
                     fault = FaultMap[i + (j*16)];
+                    Serial.println("here");
                     Log.error(fault.string);
 
                     if (fault.critical)
@@ -171,17 +175,10 @@ code_t IFaultManager::CheckFaults()
         }
     }
 
+    /** Always clear faults to be simple */
+    ClearFaults();
+
     /** Changing the error state will be done by the task */
-    // if (ret != OK)
-    // {
-    //     // ChangeState(ERROR_STATE);
-    //     return ret;
-    // }
-    
-    if (clearFaults && ret == OK) 
-    {
-        ClearFaults();
-    }
 
     return ret;
 }
@@ -216,8 +213,8 @@ PM100DX_FaultManager::PM100DX_FaultManager(uint16_t *_HighWord, uint16_t *_LowWo
  */
 void PM100DX_FaultManager::ClearFaults()
 {
-    #if BEV_DEBUG
-        Serial.println("Clearing faults")
+    #ifdef DEBUG_BEV
+        Serial.println("Clearing faults");
     #endif
 
     static unsigned buffer[M193_Read_Write_Param_Command_DLC] = {
@@ -284,8 +281,8 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
                 PM100DX_RUN_FaultMap);
 
     static OrionBMS2_FaultManager bmsDtcMgr = OrionBMS2_FaultManager(
-                &DBCParser.BMS_Faults1.DTCStatus1, 
-                &DBCParser.M171_Fault_Codes.D3_Run_Fault_Lo, 
+                (uint16_t*)&DBCParser.MSGID_0X6B2.DTC_Flags_1, 
+                (uint16_t*)&DBCParser.MSGID_0X6B2.DTC_Flags_2, 
                 OrionBMS2_DTCStatus_FaultMap);
  	
     TickType_t xLastWakeTime;
@@ -296,11 +293,6 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
 
     for( ;; )
     {
-
-        #ifdef DEBUG_BEV
-        Serial.println("FAULT TASK");
-        #endif
-
         if (rmsPostMgr.CheckFaults() != OK)
         {
             ChangeState(ERROR_STATE);

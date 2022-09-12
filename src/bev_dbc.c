@@ -1783,120 +1783,143 @@ uint32_t Pack_BMS_Current_Limit_bev_dbc(BMS_Current_Limit_t* _m, uint8_t* _d, ui
 
 #endif // BEV_DBC_USE_CANSTRUCT
 
-uint32_t Unpack_BMS_Msg1_bev_dbc(BMS_Msg1_t* _m, const uint8_t* _d, uint8_t dlc_)
+uint32_t Unpack_MSGID_0X6B1_bev_dbc(MSGID_0X6B1_t* _m, const uint8_t* _d, uint8_t dlc_)
 {
   (void)dlc_;
-  _m->SOC = (_d[0] & (0xFFU));
-  _m->DCL = (_d[1] & (0xFFU));
-  _m->CCL = (_d[2] & (0xFFU));
+  _m->Pack_SOC_ro = (_d[0] & (0xFFU));
+#ifdef BEV_DBC_USE_SIGFLOAT
+  _m->Pack_SOC_phys = (sigfloat_t)(BEV_DBC_Pack_SOC_ro_fromS(_m->Pack_SOC_ro));
+#endif // BEV_DBC_USE_SIGFLOAT
+
+  _m->Pack_DCL = (_d[1] & (0xFFU));
+  _m->Pack_CCL = (_d[2] & (0xFFU));
   _m->Internal_Temperature = (_d[3] & (0xFFU));
-  _m->Highest_Cell_Voltage = (_d[4] & (0xFFU));
-  _m->Pack_Current = (_d[5] & (0xFFU));
+  _m->High_Cell_Voltage_ro = (_d[4] & (0xFFU));
+#ifdef BEV_DBC_USE_SIGFLOAT
+  _m->High_Cell_Voltage_phys = (sigfloat_t)(BEV_DBC_High_Cell_Voltage_ro_fromS(_m->High_Cell_Voltage_ro));
+#endif // BEV_DBC_USE_SIGFLOAT
+
+  _m->Pack_Current_ro = (_d[5] & (0xFFU));
+#ifdef BEV_DBC_USE_SIGFLOAT
+  _m->Pack_Current_phys = (sigfloat_t)(BEV_DBC_Pack_Current_ro_fromS(_m->Pack_Current_ro));
+#endif // BEV_DBC_USE_SIGFLOAT
+
   _m->Populated_Cells = (_d[6] & (0xFFU));
-  _m->Checksum = (_d[7] & (0xFFU));
+  _m->CRC_Checksum = (_d[7] & (0xFFU));
 
 #ifdef BEV_DBC_USE_DIAG_MONITORS
-  _m->mon1.dlc_error = (dlc_ < BMS_Msg1_DLC);
+  _m->mon1.dlc_error = (dlc_ < MSGID_0X6B1_DLC);
   _m->mon1.last_cycle = GetSystemTick();
   _m->mon1.frame_cnt++;
 
-  FMon_BMS_Msg1_bev_dbc(&_m->mon1, BMS_Msg1_CANID);
+  FMon_MSGID_0X6B1_bev_dbc(&_m->mon1, MSGID_0X6B1_CANID);
 #endif // BEV_DBC_USE_DIAG_MONITORS
 
-  return BMS_Msg1_CANID;
+  return MSGID_0X6B1_CANID;
 }
 
 #ifdef BEV_DBC_USE_CANSTRUCT
 
-uint32_t Pack_BMS_Msg1_bev_dbc(BMS_Msg1_t* _m, __CoderDbcCanFrame_t__* cframe)
+uint32_t Pack_MSGID_0X6B1_bev_dbc(MSGID_0X6B1_t* _m, __CoderDbcCanFrame_t__* cframe)
 {
-  uint8_t i; for (i = 0; (i < BMS_Msg1_DLC) && (i < 8); cframe->Data[i++] = 0);
+  uint8_t i; for (i = 0; (i < MSGID_0X6B1_DLC) && (i < 8); cframe->Data[i++] = 0);
 
-  cframe->Data[0] |= (_m->SOC & (0xFFU));
-  cframe->Data[1] |= (_m->DCL & (0xFFU));
-  cframe->Data[2] |= (_m->CCL & (0xFFU));
+#ifdef BEV_DBC_USE_SIGFLOAT
+  _m->Pack_SOC_ro = BEV_DBC_Pack_SOC_ro_toS(_m->Pack_SOC_phys);
+  _m->High_Cell_Voltage_ro = BEV_DBC_High_Cell_Voltage_ro_toS(_m->High_Cell_Voltage_phys);
+  _m->Pack_Current_ro = BEV_DBC_Pack_Current_ro_toS(_m->Pack_Current_phys);
+#endif // BEV_DBC_USE_SIGFLOAT
+
+  cframe->Data[0] |= (_m->Pack_SOC_ro & (0xFFU));
+  cframe->Data[1] |= (_m->Pack_DCL & (0xFFU));
+  cframe->Data[2] |= (_m->Pack_CCL & (0xFFU));
   cframe->Data[3] |= (_m->Internal_Temperature & (0xFFU));
-  cframe->Data[4] |= (_m->Highest_Cell_Voltage & (0xFFU));
-  cframe->Data[5] |= (_m->Pack_Current & (0xFFU));
+  cframe->Data[4] |= (_m->High_Cell_Voltage_ro & (0xFFU));
+  cframe->Data[5] |= (_m->Pack_Current_ro & (0xFFU));
   cframe->Data[6] |= (_m->Populated_Cells & (0xFFU));
-  cframe->Data[7] |= (_m->Checksum & (0xFFU));
+  cframe->Data[7] |= (_m->CRC_Checksum & (0xFFU));
 
-  cframe->MsgId = BMS_Msg1_CANID;
-  cframe->DLC = BMS_Msg1_DLC;
-  cframe->IDE = BMS_Msg1_IDE;
-  return BMS_Msg1_CANID;
+  cframe->MsgId = MSGID_0X6B1_CANID;
+  cframe->DLC = MSGID_0X6B1_DLC;
+  cframe->IDE = MSGID_0X6B1_IDE;
+  return MSGID_0X6B1_CANID;
 }
 
 #else
 
-uint32_t Pack_BMS_Msg1_bev_dbc(BMS_Msg1_t* _m, uint8_t* _d, uint8_t* _len, uint8_t* _ide)
+uint32_t Pack_MSGID_0X6B1_bev_dbc(MSGID_0X6B1_t* _m, uint8_t* _d, uint8_t* _len, uint8_t* _ide)
 {
-  uint8_t i; for (i = 0; (i < BMS_Msg1_DLC) && (i < 8); _d[i++] = 0);
+  uint8_t i; for (i = 0; (i < MSGID_0X6B1_DLC) && (i < 8); _d[i++] = 0);
 
-  _d[0] |= (_m->SOC & (0xFFU));
-  _d[1] |= (_m->DCL & (0xFFU));
-  _d[2] |= (_m->CCL & (0xFFU));
+#ifdef BEV_DBC_USE_SIGFLOAT
+  _m->Pack_SOC_ro = BEV_DBC_Pack_SOC_ro_toS(_m->Pack_SOC_phys);
+  _m->High_Cell_Voltage_ro = BEV_DBC_High_Cell_Voltage_ro_toS(_m->High_Cell_Voltage_phys);
+  _m->Pack_Current_ro = BEV_DBC_Pack_Current_ro_toS(_m->Pack_Current_phys);
+#endif // BEV_DBC_USE_SIGFLOAT
+
+  _d[0] |= (_m->Pack_SOC_ro & (0xFFU));
+  _d[1] |= (_m->Pack_DCL & (0xFFU));
+  _d[2] |= (_m->Pack_CCL & (0xFFU));
   _d[3] |= (_m->Internal_Temperature & (0xFFU));
-  _d[4] |= (_m->Highest_Cell_Voltage & (0xFFU));
-  _d[5] |= (_m->Pack_Current & (0xFFU));
+  _d[4] |= (_m->High_Cell_Voltage_ro & (0xFFU));
+  _d[5] |= (_m->Pack_Current_ro & (0xFFU));
   _d[6] |= (_m->Populated_Cells & (0xFFU));
-  _d[7] |= (_m->Checksum & (0xFFU));
+  _d[7] |= (_m->CRC_Checksum & (0xFFU));
 
-  *_len = BMS_Msg1_DLC;
-  *_ide = BMS_Msg1_IDE;
-  return BMS_Msg1_CANID;
+  *_len = MSGID_0X6B1_DLC;
+  *_ide = MSGID_0X6B1_IDE;
+  return MSGID_0X6B1_CANID;
 }
 
 #endif // BEV_DBC_USE_CANSTRUCT
 
-uint32_t Unpack_BMS_Faults1_bev_dbc(BMS_Faults1_t* _m, const uint8_t* _d, uint8_t dlc_)
+uint32_t Unpack_MSGID_0X6B2_bev_dbc(MSGID_0X6B2_t* _m, const uint8_t* _d, uint8_t dlc_)
 {
   (void)dlc_;
-  _m->DTCStatus1 = ((_d[1] & (0xFFU)) << 8) | (_d[0] & (0xFFU));
-  _m->DTCStatus2 = ((_d[3] & (0xFFU)) << 8) | (_d[2] & (0xFFU));
+  _m->DTC_Flags_1 = (_d[0] & (0xFFU));
+  _m->DTC_Flags_2 = (_d[1] & (0xFFU));
+  _m->CRC_Checksum = (_d[7] & (0xFFU));
 
 #ifdef BEV_DBC_USE_DIAG_MONITORS
-  _m->mon1.dlc_error = (dlc_ < BMS_Faults1_DLC);
+  _m->mon1.dlc_error = (dlc_ < MSGID_0X6B2_DLC);
   _m->mon1.last_cycle = GetSystemTick();
   _m->mon1.frame_cnt++;
 
-  FMon_BMS_Faults1_bev_dbc(&_m->mon1, BMS_Faults1_CANID);
+  FMon_MSGID_0X6B2_bev_dbc(&_m->mon1, MSGID_0X6B2_CANID);
 #endif // BEV_DBC_USE_DIAG_MONITORS
 
-  return BMS_Faults1_CANID;
+  return MSGID_0X6B2_CANID;
 }
 
 #ifdef BEV_DBC_USE_CANSTRUCT
 
-uint32_t Pack_BMS_Faults1_bev_dbc(BMS_Faults1_t* _m, __CoderDbcCanFrame_t__* cframe)
+uint32_t Pack_MSGID_0X6B2_bev_dbc(MSGID_0X6B2_t* _m, __CoderDbcCanFrame_t__* cframe)
 {
-  uint8_t i; for (i = 0; (i < BMS_Faults1_DLC) && (i < 8); cframe->Data[i++] = 0);
+  uint8_t i; for (i = 0; (i < MSGID_0X6B2_DLC) && (i < 8); cframe->Data[i++] = 0);
 
-  cframe->Data[0] |= (_m->DTCStatus1 & (0xFFU));
-  cframe->Data[1] |= ((_m->DTCStatus1 >> 8) & (0xFFU));
-  cframe->Data[2] |= (_m->DTCStatus2 & (0xFFU));
-  cframe->Data[3] |= ((_m->DTCStatus2 >> 8) & (0xFFU));
+  cframe->Data[0] |= (_m->DTC_Flags_1 & (0xFFU));
+  cframe->Data[1] |= (_m->DTC_Flags_2 & (0xFFU));
+  cframe->Data[7] |= (_m->CRC_Checksum & (0xFFU));
 
-  cframe->MsgId = BMS_Faults1_CANID;
-  cframe->DLC = BMS_Faults1_DLC;
-  cframe->IDE = BMS_Faults1_IDE;
-  return BMS_Faults1_CANID;
+  cframe->MsgId = MSGID_0X6B2_CANID;
+  cframe->DLC = MSGID_0X6B2_DLC;
+  cframe->IDE = MSGID_0X6B2_IDE;
+  return MSGID_0X6B2_CANID;
 }
 
 #else
 
-uint32_t Pack_BMS_Faults1_bev_dbc(BMS_Faults1_t* _m, uint8_t* _d, uint8_t* _len, uint8_t* _ide)
+uint32_t Pack_MSGID_0X6B2_bev_dbc(MSGID_0X6B2_t* _m, uint8_t* _d, uint8_t* _len, uint8_t* _ide)
 {
-  uint8_t i; for (i = 0; (i < BMS_Faults1_DLC) && (i < 8); _d[i++] = 0);
+  uint8_t i; for (i = 0; (i < MSGID_0X6B2_DLC) && (i < 8); _d[i++] = 0);
 
-  _d[0] |= (_m->DTCStatus1 & (0xFFU));
-  _d[1] |= ((_m->DTCStatus1 >> 8) & (0xFFU));
-  _d[2] |= (_m->DTCStatus2 & (0xFFU));
-  _d[3] |= ((_m->DTCStatus2 >> 8) & (0xFFU));
+  _d[0] |= (_m->DTC_Flags_1 & (0xFFU));
+  _d[1] |= (_m->DTC_Flags_2 & (0xFFU));
+  _d[7] |= (_m->CRC_Checksum & (0xFFU));
 
-  *_len = BMS_Faults1_DLC;
-  *_ide = BMS_Faults1_IDE;
-  return BMS_Faults1_CANID;
+  *_len = MSGID_0X6B2_DLC;
+  *_ide = MSGID_0X6B2_IDE;
+  return MSGID_0X6B2_CANID;
 }
 
 #endif // BEV_DBC_USE_CANSTRUCT

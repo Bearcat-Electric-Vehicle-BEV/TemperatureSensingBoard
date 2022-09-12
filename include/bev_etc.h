@@ -16,7 +16,8 @@ typedef int16_t torque_t;
 enum PedalSourceTypes {
 	DIGITAL 		= 0,
 	ANALOG_0V_3V	= 1,
-	ANALOG_3V_0V	= 2
+	ANALOG_3V_0V	= 2,
+	ANALOG_0V_5V	= 3
 };
 
 /**

@@ -38,8 +38,8 @@ typedef struct
   M188_U2C_Message_Rxd_t M188_U2C_Message_Rxd;
   M187_U2C_Command_Txd_t M187_U2C_Command_Txd;
   BMS_Current_Limit_t BMS_Current_Limit;
-  BMS_Msg1_t BMS_Msg1;
-  BMS_Faults1_t BMS_Faults1;
+  MSGID_0X6B1_t MSGID_0X6B1;
+  MSGID_0X6B2_t MSGID_0X6B2;
 } bev_dbc_rx_t;
 
 // There is no any TX mapped massage.

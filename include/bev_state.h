@@ -43,6 +43,7 @@ const char *STATE_STRING[] = {
 extern const char *STATE_STRING[];
 extern volatile ECUState_t currentState;
 
+void ISR_SHUTDOWN_TTL_OK();
 code_t ChangeState(ECUState_t newState);
 code_t ChangeState(ECUState_t newState, const char *reason);
 bool CheckState(ECUState_t vState);

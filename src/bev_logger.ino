@@ -86,6 +86,7 @@ void CAN2Str(const CAN_message_t &msg, char *buffer, size_t len) {
 }
 
 void WriteToSD(const char* dataString, const char* fname){
+    return;
 	if (!SD.begin(BUILTIN_SDCARD)) {
         return;
     }
@@ -104,6 +105,7 @@ void WriteToSD(const char* dataString, const char* fname){
 }
 
 void WriteToSD(const CAN_message_t &msg, const char* fname){
+    return;
     static char buffer[100];
 	
     if (!SD.begin(BUILTIN_SDCARD)) {
