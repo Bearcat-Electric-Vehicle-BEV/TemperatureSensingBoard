@@ -181,9 +181,7 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
          */
         else if(CheckState(PRECHARGE_WAIT)) {
             // 5 Time Constants of the Pre-Charge Circuit
-            vTaskSuspendAll();
             vTaskDelay(pdMS_TO_TICKS(1500));
-            xTaskResumeAll();
 
             if (digitalRead(PIN_FORWARD_SWITCH) == HIGH)
             {
