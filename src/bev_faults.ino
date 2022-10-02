@@ -159,7 +159,7 @@ code_t IFaultManager::CheckFaults()
         {
             for (int i=0; i<16; i++)
             {
-                if (*wordPtr & (0x1 < i))
+                if (*wordPtr & (0x1 << i))
                 {
                     fault = FaultMap[i + (j*16)];
                     Serial.println("here");
