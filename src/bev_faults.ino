@@ -165,6 +165,8 @@ code_t IFaultManager::CheckFaults()
                     Serial.println("here");
                     Log.error(fault.string);
 
+                    WriteToSD(fault.string, "FAULTS.txt");
+
                     if (fault.critical)
                         ret = FAIL;
                     else 

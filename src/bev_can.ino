@@ -65,9 +65,9 @@ code_t CANInit(){
     Can0.setMaxMB(16);
 
     Can0.enableFIFO();
-    Can0.setFIFOFilter(REJECT_ALL);
-    Can0.setFIFOFilter(0, MSGID_0X6B1_CANID, STD);
-    Can0.setFIFOFilter(1, MSGID_0X6B2_CANID, STD);
+    // Can0.setFIFOFilter(REJECT_ALL);
+    // Can0.setFIFOFilter(0, MSGID_0X6B1_CANID, STD);
+    // Can0.setFIFOFilter(1, MSGID_0X6B2_CANID, STD);
     Can0.enableFIFOInterrupt();
     
     Can0.onReceive(CanSniff);
@@ -199,7 +199,7 @@ void CanSniff(const CAN_message_t &msg){
     // Serial.println("Recieved can msg, ID:");
     #endif
 
-    Log.can(msg);
+    // Log.can(msg);
     bev_dbc_Receive(&DBCParser, msg.buf, msg.id, msg.len);
 
     /** @todo Orion BMS Checksum */
