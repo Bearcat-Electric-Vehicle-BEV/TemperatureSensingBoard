@@ -82,6 +82,9 @@ void setup() {
 
   CANInit();
 
+  SendInverterDisable();
+  delay(100);
+
   /// @todo Setup watchdog
   
   /// @todo Setup BRAKE interrupt
@@ -98,9 +101,9 @@ void setup() {
    * should be in place. There exist tools or methods to determine how much heap
    * is being used.
    */
-  xTaskCreate(vStateMachine, "STATE", 2048, nullptr, 3, &pxStateMachineHandle);
+  // xTaskCreate(vStateMachine, "STATE", 2048, nullptr, 3, &pxStateMachineHandle);
   xTaskCreate(vETCTask, "ETC", 2048, nullptr, 5, &pxETCTaskHandle);
-  xTaskCreate(vFaultManager, "FAULT", 2048, nullptr, 4, &pxFaultManagerHandle);
+  // xTaskCreate(vFaultManager, "FAULT", 2048, nullptr, 4, &pxFaultManagerHandle);
 
   /** @note Execution doesn't go beyond scheduler */
   vTaskStartScheduler();

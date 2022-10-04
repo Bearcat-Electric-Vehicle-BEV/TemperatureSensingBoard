@@ -128,14 +128,15 @@ code_t SendMessage(unsigned id, const unsigned *buffer, unsigned len) {
 
 void SendInverterEnable() 
 {
-    CmdParameters_t cmd;
-    cmd.Direction_Command = 0x1;
+    CmdParameters_t cmd = {0};
+    cmd.InvertedEnable = 0x1;
     SendCommandMessage(&cmd);
 }
 
 void SendInverterDisable() 
 {
-    CmdParameters_t cmd;
+    CmdParameters_t cmd = {0};
+    cmd.InvertedEnable = 0x0;
     SendCommandMessage(&cmd);
 }
 
