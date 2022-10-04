@@ -198,7 +198,7 @@ void CanSniff(const CAN_message_t &msg){
     // Serial.println("Recieved can msg, ID:");
     #endif
 
-    Log.can(msg);
+    // Log.can(msg);
     bev_dbc_Receive(&DBCParser, msg.buf, msg.id, msg.len);
 
     /** @todo Orion BMS Checksum */

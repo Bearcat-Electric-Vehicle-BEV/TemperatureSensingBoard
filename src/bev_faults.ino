@@ -155,15 +155,22 @@ code_t IFaultManager::CheckFaults()
     for (int j=0; j<2; j++){
         wordPtr = words[j];
 
+        // Checks if at least one fault is present
         if (*wordPtr)
         {
+            // Finds which fault(s) present
             for (int i=0; i<16; i++)
             {
+                // Bitwise 'and' comparrison. If true, index 'i' is a '1'
                 if (*wordPtr & (0x1 << i))
                 {
+                    // Decode fault using fault map
                     fault = FaultMap[i + (j*16)];
                     Serial.println("here");
                     Log.error(fault.string);
+
+                    // Testing writing to SD functionality
+                    WriteToSD(fault.string, "FAULTS.txt");
 
                     if (fault.critical)
                         ret = FAIL;
@@ -174,6 +181,8 @@ code_t IFaultManager::CheckFaults()
 
         }
     }
+
+    // TODO: fix how faults are cleared (check for persistence)
 
     /** Always clear faults to be simple */
     ClearFaults();
