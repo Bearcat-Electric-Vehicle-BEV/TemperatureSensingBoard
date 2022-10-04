@@ -65,9 +65,9 @@ code_t CANInit(){
     Can0.setMaxMB(16);
 
     Can0.enableFIFO();
-    Can0.setFIFOFilter(REJECT_ALL);
-    Can0.setFIFOFilter(0, MSGID_0X6B1_CANID, STD);
-    Can0.setFIFOFilter(1, MSGID_0X6B2_CANID, STD);
+    // Can0.setFIFOFilter(REJECT_ALL);
+    // Can0.setFIFOFilter(0, M192_Command_Message_CANID, STD);
+    // Can0.setFIFOFilter(1, MSGID_0X6B2_CANID, STD);
     Can0.enableFIFOInterrupt();
     
     Can0.onReceive(CanSniff);
@@ -156,16 +156,15 @@ void SendCommandMessage(CmdParameters_t *cmd){
     msg.buf[1] = int(cmd->Torque_Command * 10 / 256);
     
     /** @todo should speed mode be disabled? */
-    // msg.buf[2] = SpeedCommand % 256;
-    // msg.buf[3] = int(SpeedCommand / 256);
-    msg.buf[2] = msg.buf[3] = 0;
+    msg.buf[2] = cmd->Speed_Command % 256;
+    msg.buf[3] = int(cmd->Speed_Command / 256);
 
     msg.buf[4] = (cmd->Direction_Command & 0x1);
 
     msg.buf[5] = (cmd->InvertedEnable & 0x1);
     msg.buf[5] |= (cmd->Inverter_Discharge & 0x2);
     
-    // msg.buf[5] |= (cmd->Speed_Mode_Enabled & 0x4);
+    msg.buf[5] |= (cmd->Speed_Mode_Enabled & 0x4);
     msg.buf[5] |= (cmd->RollingCounter & 0x8);    
 
     msg.buf[6] = (cmd->Torque_Limit_Command * 10) % 256;

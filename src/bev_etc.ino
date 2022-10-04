@@ -92,6 +92,7 @@ float Pedal::operator-(const Pedal &pedal)
     return (this->ratio - pedal.ratio);
 }
 
+
 /**
  * @brief Get Ratio Function for Pedal
  */
@@ -151,7 +152,11 @@ code_t ETC(Pedal *Pedal0, torque_t *request) {
       return FAIL;
     }
 
+    #ifndef SPEED_MODE
     ETC_Update(request);  // Writes to request
+    #else
+    *request = Pedal0->GetRatio_u32();
+    #endif
 
     /** @todo Check for restrictions */
     // If request > DCL or something, calc projected current draw?
@@ -206,7 +211,11 @@ void vETCTask(__attribute__((unused)) void * pvParameters)
 
     cmd.Torque_Limit_Command = 0;   /** @todo need to find valid value */
     cmd.RollingCounter = 0;
+    #ifndef SPEED_MODE
     cmd.Speed_Mode_Enabled = 0;  /** @note Speed Mode is disabled */
+    #else
+    cmd.Speed_Mode_Enabled = 1;
+    #endif
     cmd.InvertedEnable = 0;
     cmd.Direction_Command = 1;
     cmd.Speed_Command = 0;
@@ -275,7 +284,11 @@ void vETCTask(__attribute__((unused)) void * pvParameters)
           /** @todo Want cleaner way than writing to random global */
           RequestValid = true;
           cmd.InvertedEnable = 1;
+          #ifndef SPEED_MODE
           cmd.Torque_Command = Request;
+          #else
+          cmd.Speed_Command = (Request * 12);  // TODO can scale rn is a percentage
+          #endif
       }
 
       if (cmd.RollingCounter & 0xF)

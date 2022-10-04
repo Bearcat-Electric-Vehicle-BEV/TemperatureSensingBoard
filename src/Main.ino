@@ -34,7 +34,6 @@
 
 #include <task.h>
 
-
 /**
  * @brief FreeRTOS Idle Task Hook
  * Function runs as part of the IDLE task. Used to run
