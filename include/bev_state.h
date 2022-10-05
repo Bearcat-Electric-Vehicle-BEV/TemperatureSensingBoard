@@ -10,6 +10,9 @@
 #define OK 0
 #define FAIL -1
 
+#define TO_TS_DISABLE -1
+#define TO_SHUTDOWN -2
+
 typedef int code_t;
 
 /**
