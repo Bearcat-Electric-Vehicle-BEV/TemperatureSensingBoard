@@ -172,20 +172,20 @@ code_t IFaultManager::CheckFaults()
                     // Testing writing to SD functionality
                     WriteToSD(fault.string, "FAULTS.txt");
 
+                    // Change flag for chaning states
                     if (fault.critical)
-                        ret = FAIL;
+                        ret = TO_SHUTDOWN;
                     else 
-                        clearFaults = true;
+                        ret = TO_TS_DISABLE;
                 }
             }
-
         }
     }
 
     // TODO: fix how faults are cleared (check for persistence)
 
     /** Always clear faults to be simple */
-    ClearFaults();
+    // ClearFaults();
 
     /** Changing the error state will be done by the task */
 
@@ -300,8 +300,54 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
      // Initialise the xLastWakeTime variable with the current time.
     xLastWakeTime = xTaskGetTickCount();
 
+    // Split into two cycles. One clears faults, the other checks faults
     for( ;; )
     {
+        // Attempt to clear faults every cycle before checking again
+        rmsPostMgr.ClearFaults();
+        rmsRunMgr.ClearFaults();
+        bmsDtcMgr.ClearFaults();
+
+        // Wait for the next cycle.
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+        switch(rmsPostMgr.CheckFaults()){
+            case TO_SHUTDOWN:
+                // Enter shutdown
+                break;
+            case TO_TS_DISABLE:
+                // Enter TS disable
+                break;
+            default:
+                Serial.println("No POST faults\n");
+            
+        }
+
+        switch(rmsRunMgr.CheckFaults()){
+            case TO_SHUTDOWN:
+                // Enter shutdown
+                break;
+            case TO_TS_DISABLE:
+                // Enter TS disable
+                break;
+            default:
+                Serial.println("No RUN faults\n");
+            
+        }
+
+        switch(bmsDtcMgr.CheckFaults()){
+            case TO_SHUTDOWN:
+                // Enter shutdown
+                break;
+            case TO_TS_DISABLE:
+                // Enter TS disable
+                break;
+            default:
+                Serial.println("No BMS faults\n");
+            
+        }
+
+        /*
         if (rmsPostMgr.CheckFaults() != OK)
         {
             ChangeState(ERROR_STATE);
@@ -316,7 +362,7 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
         {
             ChangeState(ERROR_STATE);
         }
-
+        */
         // Wait for the next cycle.
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
