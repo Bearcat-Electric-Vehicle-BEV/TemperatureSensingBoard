@@ -303,16 +303,12 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
      // Initialise the xLastWakeTime variable with the current time.
     xLastWakeTime = xTaskGetTickCount();
 
-    // Split into two cycles. One clears faults, the other checks faults
     for( ;; )
     {
         // Attempt to clear faults every cycle before checking again
         rmsPostMgr.ClearFaults();
         rmsRunMgr.ClearFaults();
         bmsDtcMgr.ClearFaults();
-
-        // Wait for the next cycle.
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
         switch(rmsPostMgr.CheckFaults()){
             case TO_SHUTDOWN:
