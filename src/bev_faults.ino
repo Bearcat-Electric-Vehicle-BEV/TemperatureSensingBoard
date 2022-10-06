@@ -172,11 +172,14 @@ code_t IFaultManager::CheckFaults()
                     // Testing writing to SD functionality
                     WriteToSD(fault.string, "FAULTS.txt");
 
-                    // Change flag for chaning states
-                    if (fault.critical)
+                    // Set return flag
+                    // Avoid switching to TS_DISABLE if critical fault was raised earlier
+                    if (fault.critical || ret == TO_SHUTDOWN){
                         ret = TO_SHUTDOWN;
-                    else 
+                        break;
+                    } else {
                         ret = TO_TS_DISABLE;
+                    }
                 }
             }
         }
@@ -314,9 +317,11 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
         switch(rmsPostMgr.CheckFaults()){
             case TO_SHUTDOWN:
                 // Enter shutdown
+                Serial.println("Switching to SHUTDOWN..."); // DEBUG
                 break;
             case TO_TS_DISABLE:
                 // Enter TS disable
+                Serial.println("Switching to TS_DISABLE..."); // DEBUG
                 break;
             default:
                 Serial.println("No POST faults\n");
@@ -326,9 +331,11 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
         switch(rmsRunMgr.CheckFaults()){
             case TO_SHUTDOWN:
                 // Enter shutdown
+                Serial.println("Switching to SHUTDOWN..."); // DEBUG
                 break;
             case TO_TS_DISABLE:
                 // Enter TS disable
+                Serial.println("Switching to TS_DISABLE..."); // DEBUG
                 break;
             default:
                 Serial.println("No RUN faults\n");
@@ -338,9 +345,11 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
         switch(bmsDtcMgr.CheckFaults()){
             case TO_SHUTDOWN:
                 // Enter shutdown
+                Serial.println("Switching to SHUTDOWN..."); // DEBUG
                 break;
             case TO_TS_DISABLE:
                 // Enter TS disable
+                Serial.println("Switching to TS_DISABLE..."); // DEBUG
                 break;
             default:
                 Serial.println("No BMS faults\n");
