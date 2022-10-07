@@ -140,6 +140,8 @@ const Fault_t OrionBMS2_DTCStatus_FaultMap[32] = {
  * 
  * @return code_t 
  */
+
+
 code_t IFaultManager::CheckFaults()
 {
     Fault_t fault;
@@ -172,14 +174,19 @@ code_t IFaultManager::CheckFaults()
                     // Testing writing to SD functionality
                     WriteToSD(fault.string, "FAULTS.txt");
 
-                    // Set return flag
-                    // Avoid switching to TS_DISABLE if critical fault was raised earlier
-                    if (fault.critical || ret == TO_SHUTDOWN){
-                        ret = TO_SHUTDOWN;
-                        break;
-                    } else {
-                        ret = TO_TS_DISABLE;
+                    // Need to switch states if fault persists for 2 cycles
+                    if (fault.flag){
+                        fault.flag = false;
+                        if (fault.critical || ret == TO_SHUTDOWN){
+                            ret = TO_SHUTDOWN;
+                            // Ensure critical fault has priority over non-critical
+                            break;
+                        } else {
+                            ret = TO_TS_DISABLE;
+                        }
                     }
+                    fault.flag = true;
+                    ClearFaults();
                 }
             }
         }
@@ -305,11 +312,6 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
 
     for( ;; )
     {
-        // Attempt to clear faults every cycle before checking again
-        rmsPostMgr.ClearFaults();
-        rmsRunMgr.ClearFaults();
-        bmsDtcMgr.ClearFaults();
-
         switch(rmsPostMgr.CheckFaults()){
             case TO_SHUTDOWN:
                 // Enter shutdown
