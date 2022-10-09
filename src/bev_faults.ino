@@ -164,10 +164,6 @@ code_t IFaultManager::CheckFaults()
             // Finds which fault(s) present
             for (int i=0; i<16; i++)
             {
-                 // Save time if critical fault already raised
-                if (ret == TO_SHUTDOWN){
-                    break;
-                }
                 // Bitwise 'and' comparrison. If true, index 'i' is a '1'
                 if (*wordPtr & (0x1 << i))
                 {
@@ -181,17 +177,17 @@ code_t IFaultManager::CheckFaults()
 
                     // Need to switch states if fault persists for 2 cycles
                     if (*flags_raised & (0x1 << i)){
-                        if (fault.critical || ret == TO_SHUTDOWN){
-                            ret = TO_SHUTDOWN;
+                        if (fault.critical){
                             // Ensure critical fault has priority over non-critical
-                            break;
+                            ret = TO_SHUTDOWN;
+                            return ret;
                         } else {
                             ret = TO_TS_DISABLE;
                         }
                     }
                     // Raise flag for this fault
                     *flags_raised = *flags_raised | (0x1 << i);
-                    ClearFaults();
+                    ClearFaults(); // TODO: Handle clearning better
                 } else { 
                     // Lower flag if fault not present
                     *flags_raised = *flags_raised & (0x0 << i);
