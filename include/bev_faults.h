@@ -33,6 +33,7 @@ class IFaultManager
 public:
 	uint16_t *HighWord;
 	uint16_t *LowWord;
+	uint32_t *Flags;
 	
 	const Fault_t *FaultMap;
 
@@ -51,7 +52,7 @@ class PM100DX_FaultManager : public IFaultManager
 public:
 
 	PM100DX_FaultManager(uint16_t *_HighWord, uint16_t *_LowWord, 
-		const Fault_t *_FaultMap);
+		const Fault_t *_FaultMap, uint32_t *_Flags);
 	void ClearFaults();
 
 private:
@@ -65,7 +66,7 @@ class OrionBMS2_FaultManager : public IFaultManager
 public:
 
 	OrionBMS2_FaultManager(uint16_t *_HighWord, uint16_t *_LowWord, 
-		const Fault_t *_FaultMap);
+		const Fault_t *_FaultMap, uint32_t *_Flags);
 	void ClearFaults();
 
 private:

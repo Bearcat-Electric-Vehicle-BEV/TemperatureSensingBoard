@@ -150,6 +150,7 @@ code_t IFaultManager::CheckFaults()
 
     uint16_t *wordPtr;
     uint16_t *words[2] = {HighWord, LowWord};
+    uint32_t *flags_raised = Flags;
 
     Serial.println(*HighWord);
     Serial.println(*LowWord);
@@ -163,6 +164,10 @@ code_t IFaultManager::CheckFaults()
             // Finds which fault(s) present
             for (int i=0; i<16; i++)
             {
+                 // Save time if critical fault already raised
+                if (ret = TO_SHUTDOWN){
+                    break;
+                }
                 // Bitwise 'and' comparrison. If true, index 'i' is a '1'
                 if (*wordPtr & (0x1 << i))
                 {
@@ -175,8 +180,9 @@ code_t IFaultManager::CheckFaults()
                     WriteToSD(fault.string, "FAULTS.txt");
 
                     // Need to switch states if fault persists for 2 cycles
-                    if (fault.flag){
-                        fault.flag = false;
+                    if (*flags_raised & (0x1 << i)){
+                        // Lower flag
+                        *flags_raised = *flags_raised & (0x0 << i);
                         if (fault.critical || ret == TO_SHUTDOWN){
                             ret = TO_SHUTDOWN;
                             // Ensure critical fault has priority over non-critical
@@ -185,7 +191,8 @@ code_t IFaultManager::CheckFaults()
                             ret = TO_TS_DISABLE;
                         }
                     }
-                    fault.flag = true;
+                    // Raise flag for this fault
+                    *flags_raised = *flags_raised | (0x1 << i);
                     ClearFaults();
                 }
             }
@@ -208,13 +215,15 @@ code_t IFaultManager::CheckFaults()
  * @param _HighWord 
  * @param _LowWord 
  * @param _FaultMap 
+ * @param _Flags
  */
 PM100DX_FaultManager::PM100DX_FaultManager(uint16_t *_HighWord, uint16_t *_LowWord, 
-        const Fault_t *_FaultMap)
+        const Fault_t *_FaultMap, uint32_t *_Flags)
 {
     this->HighWord = _HighWord;
     this->LowWord = _LowWord;
     this->FaultMap = _FaultMap;
+    this->Flags = _Flags;
 }
 
 /**
@@ -250,13 +259,15 @@ void PM100DX_FaultManager::ClearFaults()
  * @param _HighWord 
  * @param _LowWord 
  * @param _FaultMap 
+ * @param _Flags
  */
 OrionBMS2_FaultManager::OrionBMS2_FaultManager(uint16_t *_HighWord, uint16_t *_LowWord, 
-        const Fault_t *_FaultMap)
+        const Fault_t *_FaultMap, uint32_t *_Flags)
 {
     this->HighWord = _HighWord;
     this->LowWord = _LowWord;
     this->FaultMap = _FaultMap;
+    this->Flags = _Flags;
 }
 
 /**
@@ -292,17 +303,17 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
     static PM100DX_FaultManager rmsPostMgr = PM100DX_FaultManager(
                 &DBCParser.M171_Fault_Codes.D2_Post_Fault_Hi, 
                 &DBCParser.M171_Fault_Codes.D1_Post_Fault_Lo, 
-                PM100DX_POST_FaultMap);
+                PM100DX_POST_FaultMap, 0);
 
     static PM100DX_FaultManager rmsRunMgr = PM100DX_FaultManager(
                 &DBCParser.M171_Fault_Codes.D4_Run_Fault_Hi, 
                 &DBCParser.M171_Fault_Codes.D3_Run_Fault_Lo, 
-                PM100DX_RUN_FaultMap);
+                PM100DX_RUN_FaultMap, 0);
 
     static OrionBMS2_FaultManager bmsDtcMgr = OrionBMS2_FaultManager(
                 (uint16_t*)&DBCParser.MSGID_0X6B2.DTC_Flags_1, 
                 (uint16_t*)&DBCParser.MSGID_0X6B2.DTC_Flags_2, 
-                OrionBMS2_DTCStatus_FaultMap);
+                OrionBMS2_DTCStatus_FaultMap, 0);
  	
     TickType_t xLastWakeTime;
  	const TickType_t xFrequency = pdMS_TO_TICKS(2500);
