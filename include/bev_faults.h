@@ -16,7 +16,6 @@ void vFaultManager(__attribute__((unused)) void * pvParameters);
 typedef struct {
 	const char *string;
 	bool critical;
-	bool flag = false;
 } Fault_t;
 
 /** @todo make static and hidden */
