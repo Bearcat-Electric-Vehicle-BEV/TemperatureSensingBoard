@@ -140,6 +140,8 @@ const Fault_t OrionBMS2_DTCStatus_FaultMap[32] = {
  * 
  * @return code_t 
  */
+
+
 code_t IFaultManager::CheckFaults()
 {
     Fault_t fault;
@@ -172,20 +174,28 @@ code_t IFaultManager::CheckFaults()
                     // Testing writing to SD functionality
                     WriteToSD(fault.string, "FAULTS.txt");
 
-                    if (fault.critical)
-                        ret = FAIL;
-                    else 
-                        clearFaults = true;
+                    // Need to switch states if fault persists for 2 cycles
+                    if (fault.flag){
+                        fault.flag = false;
+                        if (fault.critical || ret == TO_SHUTDOWN){
+                            ret = TO_SHUTDOWN;
+                            // Ensure critical fault has priority over non-critical
+                            break;
+                        } else {
+                            ret = TO_TS_DISABLE;
+                        }
+                    }
+                    fault.flag = true;
+                    ClearFaults();
                 }
             }
-
         }
     }
 
     // TODO: fix how faults are cleared (check for persistence)
 
     /** Always clear faults to be simple */
-    ClearFaults();
+    // ClearFaults();
 
     /** Changing the error state will be done by the task */
 
@@ -302,6 +312,49 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
 
     for( ;; )
     {
+        switch(rmsPostMgr.CheckFaults()){
+            case TO_SHUTDOWN:
+                // Enter shutdown
+                Serial.println("Switching to SHUTDOWN..."); // DEBUG
+                break;
+            case TO_TS_DISABLE:
+                // Enter TS disable
+                Serial.println("Switching to TS_DISABLE..."); // DEBUG
+                break;
+            default:
+                Serial.println("No POST faults\n");
+            
+        }
+
+        switch(rmsRunMgr.CheckFaults()){
+            case TO_SHUTDOWN:
+                // Enter shutdown
+                Serial.println("Switching to SHUTDOWN..."); // DEBUG
+                break;
+            case TO_TS_DISABLE:
+                // Enter TS disable
+                Serial.println("Switching to TS_DISABLE..."); // DEBUG
+                break;
+            default:
+                Serial.println("No RUN faults\n");
+            
+        }
+
+        switch(bmsDtcMgr.CheckFaults()){
+            case TO_SHUTDOWN:
+                // Enter shutdown
+                Serial.println("Switching to SHUTDOWN..."); // DEBUG
+                break;
+            case TO_TS_DISABLE:
+                // Enter TS disable
+                Serial.println("Switching to TS_DISABLE..."); // DEBUG
+                break;
+            default:
+                Serial.println("No BMS faults\n");
+            
+        }
+
+        /*
         if (rmsPostMgr.CheckFaults() != OK)
         {
             ChangeState(SHUTDOWN);
@@ -316,7 +369,7 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
         {
             ChangeState(SHUTDOWN);
         }
-
+        */
         // Wait for the next cycle.
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
