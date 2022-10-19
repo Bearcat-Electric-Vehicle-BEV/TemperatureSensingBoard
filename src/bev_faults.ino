@@ -304,17 +304,17 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
     {
         if (rmsPostMgr.CheckFaults() != OK)
         {
-            ChangeState(ERROR_STATE);
+            ChangeState(SHUTDOWN);
         }
         
         if (rmsRunMgr.CheckFaults() != OK)
         {
-            ChangeState(ERROR_STATE);
+            ChangeState(SHUTDOWN);
         }
         
         if (bmsDtcMgr.CheckFaults() != OK)
         {
-            ChangeState(ERROR_STATE);
+            ChangeState(SHUTDOWN);
         }
 
         // Wait for the next cycle.

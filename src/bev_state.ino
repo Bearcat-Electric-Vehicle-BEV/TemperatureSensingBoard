@@ -44,7 +44,7 @@ void ISR_SHUTDOWN_TTL_OK(void)
     if (0)
     {
     /// Change to error state
-    ChangeState(ERROR_STATE, "PIN_SHUTDOWN_TTL_OK went HIGH");
+    ChangeState(SHUTDOWN, "PIN_SHUTDOWN_TTL_OK went HIGH");
     }
 
 }
@@ -68,7 +68,7 @@ code_t ChangeState(ECUState_t newState, const char *reason) {
     ECUState = newState;
     char buffer[100];
     snprintf(buffer, 100, "CHANGE STATE TO %s", STATE_STRING[newState]);
-    if (newState == ERROR_STATE)
+    if (newState == SHUTDOWN || newState == TS_DISABLE)
     {
         Log.error(buffer);
         Log.error(reason);
@@ -133,19 +133,60 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
         ServiceCANIdle();
         
         if (CheckState(INIT)) {
+            /* 
+            This state is the first to be entered after the vehicle LV switch is flipped. Durring 
+            this state CAN communication is initialized and basic checks should be completed. All 
+            pins corresponding to running the motor or allowing HV should be set to their respective 
+            OFF positions.
+            */
             digitalWrite(PIN_ECU_OK, LOW);
             ChangeState(RESET);
         } 
         else if(CheckState(RESET)) {
-            // TODO (Marsh May 2022): what memory needs reset?
+            /*
+            At a minimum, this state should be used to reset the fault manager and the display. 
+            This state will be used to complete the 'refresh' tasks required to clear any lingering 
+            faults or errors which may have caused the previous shutdown.
+            */
+           // TODO (Marsh May 2022): what memory needs reset?
             digitalWrite(PIN_ECU_OK, LOW);
             digitalWrite(PIN_PRECHARGE_FINISHED, LOW);
             ChangeState(PRE_HV_CHECK);            
         } 
         else if(CheckState(RESET_CONFIRM)) {
             // TODO (marsh May 2022): is this state necessary?
+            /*
+            If this state is considered nessecary, it will be a resting state between TS_DISABLED
+            and READY_TO_GO_WAIT. During this time it can wait to see a button press or some other
+            confirmation from the driver that they are ready to re-enter the driving state.
+            */
         } 
-        else if(CheckState(ERROR_STATE)) {
+        else if(CheckState(SHUTDOWN)) {
+            /*
+            This state replaced the legacy ERROR state which effectively killed HV power to the
+            vehicle. Shutdown state is meant to disconnect HV power from the accumulator to the
+            rest of the tractive system. This state cannot be left until the vehicle is reset
+            from outside. This state is effectively GAME OVER for the current run.
+            */
+            digitalWrite(PIN_ECU_OK, LOW);
+            digitalWrite(PIN_PRECHARGE_FINISHED, LOW);
+            SendInverterDisable();
+            
+            #ifdef DEBUG_BEV
+            // Serial.println("Entered Error State");
+            #else 
+            //configASSERT(NULL);  // Reset vector?
+            #endif
+            
+        } 
+        else if(CheckState(TS_DISABLE)) {
+            /*
+            This is a soft version of the SHUTDOWN state. This state does not require that we
+            completely cut off HV power, but it must shutoff the motor. Effectively, this state
+            will act as a way to stop the motor if a non critical issue comes up, while still
+            allowing the driver the ability to restart without getting out of the vehicle or having
+            to quit the current run.
+            */
             digitalWrite(PIN_ECU_OK, LOW);
             SendInverterDisable();
             
@@ -156,20 +197,16 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
             #endif
             
         } 
-        else if(CheckState(ROUTINE_CHECK)) {
-            /** @todo */
-        } 
         else if(CheckState(PRE_HV_CHECK)) {
             // TODO (Marsh May 2022): what memory needs reset?
-
+            /*
+            This state checks the features of the vehicle pertaining to HV before PRE_CHARGE_WAIT
+            Items including the current charge of the battery and reseting the precharge pin will
+            be handled here ??, and a physical switch will need to be flipped before going into
+            pre charge
+            */
             digitalWrite(PIN_ECU_OK, LOW);
             digitalWrite(PIN_PRECHARGE_FINISHED, LOW);
-
-            ChangeState(HV_READY_WAIT);
-        } 
-        else if(CheckState(HV_READY_WAIT)) {
-            digitalWrite(PIN_ECU_OK, HIGH);
-            // digitalWrite(PIN_HV_READY, HIGH);
 
             ChangeState(PRECHARGE_WAIT);
         } 
@@ -180,7 +217,12 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
          * capacitors.
          */
         else if(CheckState(PRECHARGE_WAIT)) {
+            /*
+            This state is meant to allow enough time for the system to precharge, it manually delays
+            while monitoring how the capacitors charge.
+            */
             // 5 Time Constants of the Pre-Charge Circuit
+            digitalWrite(PIN_ECU_OK, HIGH);
             vTaskDelay(pdMS_TO_TICKS(1500));
 
             if (digitalRead(PIN_FORWARD_SWITCH) == HIGH)
@@ -194,11 +236,19 @@ void vStateMachine(__attribute__((unused)) void * pvParameters)
             ChangeState(READY_TO_GO_WAIT);        
         } 
         else if(CheckState(READY_TO_GO_WAIT)) {
+            /*
+            This task begins reading the pedal positions and allows the motor controler to respond
+            by spinning the motor. This is the running state of the vehicle.
+            */
             /** @note ETC Task is unblocked and running */
         }
         else {
+            /*
+            Catch for if the vehicle somehow changes to a state that hasnt been laid out here.
+            Sends the vehicle to SHUTDOWN
+            */
           Log.critical("Entered unknown state, jumping to error");
-          ChangeState(ERROR_STATE);
+          ChangeState(SHUTDOWN);
         }
 
         // Wait for the next cycle.
