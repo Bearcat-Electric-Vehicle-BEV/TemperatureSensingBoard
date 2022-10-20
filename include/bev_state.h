@@ -28,12 +28,13 @@ typedef int code_t;
         STATE(INIT)   \
         STATE(RESET)  \
         STATE(RESET_CONFIRM)   \
-        STATE(ERROR_STATE)  \
+        STATE(SHUTDOWN)  \
         STATE(ROUTINE_CHECK)  \
         STATE(PRE_HV_CHECK)  \
         STATE(HV_READY_WAIT)  \
         STATE(PRECHARGE_WAIT)  \
         STATE(READY_TO_GO_WAIT)  \
+        STATE(TS_DISABLE)  \
 
 typedef enum {
     FOREACH_STATE(GENERATE_STATE_ENUM)

@@ -367,7 +367,18 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
             Serial.println("Switching to TS_DISABLE...");
             //ChangeState(TS_DISABLE);
         }
-
+        /*
+        if (rmsRunMgr.CheckFaults() != OK)
+        {
+            ChangeState(ERROR_STATE);
+        }
+        
+        if (bmsDtcMgr.CheckFaults() != OK)
+        {
+            ChangeState(ERROR_STATE);
+        }
+        */
+        // Wait for the next cycle.
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
  

@@ -256,7 +256,7 @@ void vETCTask(__attribute__((unused)) void * pvParameters)
           {
               /** @todo Proper fault detection and system failure */
               cmd.InvertedEnable = 0;
-              ChangeState(ERROR_STATE, "Pedals outside threshold for over 100ms");
+              ChangeState(SHUTDOWN, "Pedals outside threshold for over 100ms");
           }
 
           /** @note FSAE T.4.2.4 Page 62 
@@ -270,7 +270,7 @@ void vETCTask(__attribute__((unused)) void * pvParameters)
       {
           /** @todo Too Harsh? */
           cmd.InvertedEnable = 0;
-          ChangeState(ERROR_STATE, "Brake applied while pedal also applied");
+          ChangeState(TS_DISABLE, "Brake applied while pedal also applied");
       }
 
       /** Applying ETC Algorithm */
