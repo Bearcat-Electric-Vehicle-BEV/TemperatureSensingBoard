@@ -20,6 +20,11 @@
  * continue to clear the fault over and over again. It's important that if
  * the fault is critical, then it's labeled as so.
  */
+
+#define TS_DISABLE_LOOP -1
+#define SHUTDOWN_LOOP -2
+int nextStateLoop = 0;
+
 const Fault_t PM100DX_POST_FaultMap[32] = {
     {"Hardware Gate/Desaturation Fault", true},
     {"HW Over-current Fault", true},
@@ -150,6 +155,7 @@ code_t IFaultManager::CheckFaults()
 
     uint16_t *wordPtr;
     uint16_t *words[2] = {HighWord, LowWord};
+    uint32_t *flags_raised = Flags;
 
     Serial.println(*HighWord);
     Serial.println(*LowWord);
@@ -175,18 +181,21 @@ code_t IFaultManager::CheckFaults()
                     WriteToSD(fault.string, "FAULTS.txt");
 
                     // Need to switch states if fault persists for 2 cycles
-                    if (fault.flag){
-                        fault.flag = false;
-                        if (fault.critical || ret == TO_SHUTDOWN){
-                            ret = TO_SHUTDOWN;
+                    if (*flags_raised & (0x1 << i)){
+                        ClearFaults();
+                        if (fault.critical){
                             // Ensure critical fault has priority over non-critical
-                            break;
+                            ret = TO_SHUTDOWN;
+                            return ret;
                         } else {
                             ret = TO_TS_DISABLE;
                         }
                     }
-                    fault.flag = true;
-                    ClearFaults();
+                    // Raise flag for this fault
+                    *flags_raised = *flags_raised | (0x1 << i);
+                } else { 
+                    // Lower flag if fault not present
+                    *flags_raised = *flags_raised & (0x0 << i);
                 }
             }
         }
@@ -208,13 +217,15 @@ code_t IFaultManager::CheckFaults()
  * @param _HighWord 
  * @param _LowWord 
  * @param _FaultMap 
+ * @param _Flags
  */
 PM100DX_FaultManager::PM100DX_FaultManager(uint16_t *_HighWord, uint16_t *_LowWord, 
-        const Fault_t *_FaultMap)
+        const Fault_t *_FaultMap, uint32_t *_Flags)
 {
     this->HighWord = _HighWord;
     this->LowWord = _LowWord;
     this->FaultMap = _FaultMap;
+    this->Flags = _Flags;
 }
 
 /**
@@ -250,13 +261,15 @@ void PM100DX_FaultManager::ClearFaults()
  * @param _HighWord 
  * @param _LowWord 
  * @param _FaultMap 
+ * @param _Flags
  */
 OrionBMS2_FaultManager::OrionBMS2_FaultManager(uint16_t *_HighWord, uint16_t *_LowWord, 
-        const Fault_t *_FaultMap)
+        const Fault_t *_FaultMap, uint32_t *_Flags)
 {
     this->HighWord = _HighWord;
     this->LowWord = _LowWord;
     this->FaultMap = _FaultMap;
+    this->Flags = _Flags;
 }
 
 /**
@@ -292,17 +305,17 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
     static PM100DX_FaultManager rmsPostMgr = PM100DX_FaultManager(
                 &DBCParser.M171_Fault_Codes.D2_Post_Fault_Hi, 
                 &DBCParser.M171_Fault_Codes.D1_Post_Fault_Lo, 
-                PM100DX_POST_FaultMap);
+                PM100DX_POST_FaultMap, 0);
 
     static PM100DX_FaultManager rmsRunMgr = PM100DX_FaultManager(
                 &DBCParser.M171_Fault_Codes.D4_Run_Fault_Hi, 
                 &DBCParser.M171_Fault_Codes.D3_Run_Fault_Lo, 
-                PM100DX_RUN_FaultMap);
+                PM100DX_RUN_FaultMap, 0);
 
     static OrionBMS2_FaultManager bmsDtcMgr = OrionBMS2_FaultManager(
                 (uint16_t*)&DBCParser.MSGID_0X6B2.DTC_Flags_1, 
                 (uint16_t*)&DBCParser.MSGID_0X6B2.DTC_Flags_2, 
-                OrionBMS2_DTCStatus_FaultMap);
+                OrionBMS2_DTCStatus_FaultMap, 0);
  	
     TickType_t xLastWakeTime;
  	const TickType_t xFrequency = pdMS_TO_TICKS(2500);
@@ -312,62 +325,57 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
 
     for( ;; )
     {
+        // Use switch case to only run CheckFaults once per fault manager type
         switch(rmsPostMgr.CheckFaults()){
             case TO_SHUTDOWN:
-                // Enter shutdown
-                Serial.println("Switching to SHUTDOWN..."); // DEBUG
+                nextStateLoop = SHUTDOWN_LOOP;
                 break;
             case TO_TS_DISABLE:
-                // Enter TS disable
-                Serial.println("Switching to TS_DISABLE..."); // DEBUG
+                // Prioritize SHUTDOWN over TS_DISABLE
+                if (nextStateLoop != SHUTDOWN_LOOP) nextStateLoop = TS_DISABLE_LOOP;
                 break;
             default:
                 Serial.println("No POST faults\n");
-            
         }
 
         switch(rmsRunMgr.CheckFaults()){
             case TO_SHUTDOWN:
-                // Enter shutdown
-                Serial.println("Switching to SHUTDOWN..."); // DEBUG
+                nextStateLoop = SHUTDOWN_LOOP;
                 break;
             case TO_TS_DISABLE:
-                // Enter TS disable
-                Serial.println("Switching to TS_DISABLE..."); // DEBUG
+                if (nextStateLoop != SHUTDOWN_LOOP) nextStateLoop = TS_DISABLE_LOOP;
                 break;
             default:
                 Serial.println("No RUN faults\n");
-            
         }
 
         switch(bmsDtcMgr.CheckFaults()){
             case TO_SHUTDOWN:
-                // Enter shutdown
-                Serial.println("Switching to SHUTDOWN..."); // DEBUG
+                nextStateLoop = SHUTDOWN_LOOP;
                 break;
             case TO_TS_DISABLE:
-                // Enter TS disable
-                Serial.println("Switching to TS_DISABLE..."); // DEBUG
+                if (nextStateLoop != SHUTDOWN_LOOP) nextStateLoop = TS_DISABLE_LOOP;
                 break;
             default:
                 Serial.println("No BMS faults\n");
-            
         }
 
-        /*
-        if (rmsPostMgr.CheckFaults() != OK)
-        {
-            ChangeState(SHUTDOWN);
+        if (nextStateLoop == SHUTDOWN_LOOP){
+            Serial.println("Switching to SHUTDOWN state...");
+            //ChangeState(SHUTDOWN);
+        } else if (nextStateLoop == TS_DISABLE_LOOP){
+            Serial.println("Switching to TS_DISABLE...");
+            //ChangeState(TS_DISABLE);
         }
-        
+        /*
         if (rmsRunMgr.CheckFaults() != OK)
         {
-            ChangeState(SHUTDOWN);
+            ChangeState(ERROR_STATE);
         }
         
         if (bmsDtcMgr.CheckFaults() != OK)
         {
-            ChangeState(SHUTDOWN);
+            ChangeState(ERROR_STATE);
         }
         */
         // Wait for the next cycle.
