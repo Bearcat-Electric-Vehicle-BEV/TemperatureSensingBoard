@@ -157,8 +157,8 @@ code_t IFaultManager::CheckFaults()
     uint16_t *words[2] = {HighWord, LowWord};
     uint32_t *flags_raised = Flags;
 
-    Serial.println(*HighWord);
-    Serial.println(*LowWord);
+    // Serial.println(*HighWord);
+    // Serial.println(*LowWord);
 
     for (int j=0; j<2; j++){
         wordPtr = words[j];
@@ -174,11 +174,7 @@ code_t IFaultManager::CheckFaults()
                 {
                     // Decode fault using fault map
                     fault = FaultMap[i + (j*16)];
-                    Serial.println("here");
                     Log.error(fault.string);
-
-                    // Testing writing to SD functionality
-                    WriteToSD(fault.string, "FAULTS.txt");
 
                     // Need to switch states if fault persists for 2 cycles
                     if (*flags_raised & (0x1 << i)){
@@ -195,7 +191,7 @@ code_t IFaultManager::CheckFaults()
                     *flags_raised = *flags_raised | (0x1 << i);
                 } else { 
                     // Lower flag if fault not present
-                    *flags_raised = *flags_raised & (0x0 << i);
+                    *flags_raised = *flags_raised & ~(0x1 << i);
                 }
             }
         }
@@ -332,7 +328,8 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
                 break;
             case TO_TS_DISABLE:
                 // Prioritize SHUTDOWN over TS_DISABLE
-                if (nextStateLoop != SHUTDOWN_LOOP) nextStateLoop = TS_DISABLE_LOOP;
+                if (nextStateLoop != SHUTDOWN_LOOP) 
+                    nextStateLoop = TS_DISABLE_LOOP;
                 break;
             default:
                 Serial.println("No POST faults\n");
@@ -343,7 +340,8 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
                 nextStateLoop = SHUTDOWN_LOOP;
                 break;
             case TO_TS_DISABLE:
-                if (nextStateLoop != SHUTDOWN_LOOP) nextStateLoop = TS_DISABLE_LOOP;
+                if (nextStateLoop != SHUTDOWN_LOOP) 
+                    nextStateLoop = TS_DISABLE_LOOP;
                 break;
             default:
                 Serial.println("No RUN faults\n");
@@ -354,7 +352,8 @@ void vFaultManager(__attribute__((unused)) void * pvParameters)
                 nextStateLoop = SHUTDOWN_LOOP;
                 break;
             case TO_TS_DISABLE:
-                if (nextStateLoop != SHUTDOWN_LOOP) nextStateLoop = TS_DISABLE_LOOP;
+                if (nextStateLoop != SHUTDOWN_LOOP) 
+                    nextStateLoop = TS_DISABLE_LOOP;
                 break;
             default:
                 Serial.println("No BMS faults\n");
