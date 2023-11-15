@@ -218,8 +218,8 @@ void vBMSTask(__attribute__((unused)) void *pvParameters)
         static int debugCnt = 10;  // Log on serial on first pass
         if (debugCnt >= 10) // 100ms * 10 = 1000ms ; message is logged on serial at a 1s rate. 
         {
-            uint8_t debugBuf[8] = {0};
-            CAN2Str(msg, debugBuf, 8);
+            uint8_t debugBuf[100];
+            CAN2Str(msg, debugBuf, 100);
             Serial.println(debugBuf);
             debugCnt = 0; // Reset count
         }
