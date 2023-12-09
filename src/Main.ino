@@ -203,12 +203,12 @@ void vBMSTask(__attribute__((unused)) void *pvParameters)
         msg.buf[1] = min;     // min;
         msg.buf[2] = max;     // max;
         msg.buf[3] = average; // average;
-        msg.buf[4] = 0x01;    // Number of thermistors enabled   (1)
-        msg.buf[5] = 0x01;    // Highest thermistor ID on the module
-        msg.buf[6] = 0x00;    // Lowest thermistor ID on the module
+        msg.buf[4] = 0x07;    // Number of thermistors enabled   (1)
+        msg.buf[5] = 0x03;    // Highest thermistor ID on the module
+        msg.buf[6] = 0x05;    // Lowest thermistor ID on the module
 
         // Checksum 8-bit (sum of all bytes + ID + length)
-        checksum = (min + max + average + 0x07 + 0x01 + 0x00 + 0 + 8);
+        checksum = (0 + min + max + average + 0x07 + 0x03 + 0x05 + 57 + 8);
         msg.buf[7] = checksum;
 
         // Sends CAN Tx message
