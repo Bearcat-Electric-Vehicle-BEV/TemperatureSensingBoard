@@ -58,7 +58,6 @@ void setup()
 #ifdef DEBUG
     Serial.begin(115200);
 #endif
-    
     // Initialize Hardware
     SPI.begin();
 
@@ -126,10 +125,12 @@ void vBMSTask(__attribute__((unused)) void *pvParameters)
         #define NUM_ADC_CH 7
         const uint16_t address[NUM_ADC_CH] = {0x00, 0x800, 0x1000, 0x1800, 0x2000, 0x2800, 0x3000};
         
-        int8_t min = 0; // Min Temp (1 C*)
-        int8_t max = 0; // Max Temp (1 C*)
+        int8_t min = 125; // Min Temp (1 C*)
+        int8_t max = -45; // Max Temp (1 C*)
         // NOTE: BMS ignores the average, can still be calculated if needed
-        int8_t average = 0; // Average Temp (1 C*)
+        int16_t average = 0; // Average Temp (1 C*)
+        int8_t minID = 0;
+        int8_t maxID = 0;
 
         uint16_t rxbuff = 0x0; // SPI Rx Buffer
         uint16_t txbuff = 0x0; // SPI Tx Buffer
@@ -161,23 +162,31 @@ void vBMSTask(__attribute__((unused)) void *pvParameters)
              * for offsetting the raw ADC value to be 1* Celsius. This will most likely need to played around with
              * recommend logging the raw ADC value you collect via CAN or Serial. 
              */
-            int index = adcRaw - 39;
+            int index = adcRaw - 66;
             if (index < 0)
             {
                 index = 0;
             }
-            if (index > 57)
+            if (index > 58)
             {
-                index = 57;
+                index = 58;
             }
             convTemp = lookup[index];
+
+            // ternary operator 
+            minID = (min > convTemp) ? i : minID; 
+            min = (min > convTemp) ? convTemp : min; 
+            maxID = (max < convTemp) ? i : maxID; 
+            max = (max < convTemp) ? convTemp : max; 
+            average = average + convTemp;
+
 
 #ifdef DEBUG
         static int debugAdcCnt = 10;  // Log on serial on first pass
         if (debugAdcCnt >= 10) // 100ms * 10 = 1000ms ; message is logged on serial at a 1s rate. 
         {
             char debugAdcBuf[100];
-            snprintf(debugAdcBuf, 100, "Raw ADC Value:0x%X\nConversion Temperature:%d\n", adcRaw, convTemp);
+            snprintf(debugAdcBuf, 100, "Raw ADC Value:0x%X\nConversion Temperature:%d\nMin:%d Max:%d\n", adcRaw, convTemp, min, max);
             Serial.println(debugAdcBuf);
             debugAdcCnt = 0; // Reset count
         }
@@ -186,14 +195,13 @@ void vBMSTask(__attribute__((unused)) void *pvParameters)
             debugAdcCnt++;
         } 
 #endif        
-            // ternary operator 
-            min = (min > convTemp) ? convTemp : min; 
-            max = (max < convTemp) ? convTemp : max; 
         }
 
         /* NOTE: Here we are creating the msg to send the BMS. For more information about the structure of a 
          * CAN message please see the following examples: https://www.mathworks.com/help/vnt/ug/transmit-and-receive-can-messages.html.
          */
+
+        average = average / NUM_ADC_CH;
 
         msg.id = 0x1839F380; // Extended J1939 ID for Orion BMS 2 rx, Thermal Expansion Module tx
         msg.len = 8;
@@ -203,12 +211,12 @@ void vBMSTask(__attribute__((unused)) void *pvParameters)
         msg.buf[1] = min;     // min;
         msg.buf[2] = max;     // max;
         msg.buf[3] = average; // average;
-        msg.buf[4] = 0x01;    // Number of thermistors enabled   (1)
-        msg.buf[5] = 0x01;    // Highest thermistor ID on the module
-        msg.buf[6] = 0x00;    // Lowest thermistor ID on the module
+        msg.buf[4] = NUM_ADC_CH;    // Number of thermistors enabled   (1)
+        msg.buf[5] = maxID;    // Highest thermistor ID on the module
+        msg.buf[6] = minID;    // Lowest thermistor ID on the module
 
         // Checksum 8-bit (sum of all bytes + ID + length)
-        checksum = (min + max + average + 0x07 + 0x01 + 0x00 + 0 + 8);
+        checksum = (0 + min + max + average + NUM_ADC_CH + maxID + minID + 57 + 8);
         msg.buf[7] = checksum;
 
         // Sends CAN Tx message
